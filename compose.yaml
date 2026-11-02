@@ -1,0 +1,63 @@
+# Local development:   docker compose up -d db
+# Full stack in Docker: docker compose --profile app up --build -d
+# First admin:          docker compose --profile app run --rm migrate npm run db:seed
+name: desa-pendil
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-desa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-desa_pendil}
+    ports:
+      # Bound to localhost only: the database must never be exposed publicly.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # One-shot: applies SQL migrations, then exits. Also used for the admin seed.
+  migrate:
+    profiles: ["app"]
+    build:
+      context: .
+      target: tools
+    restart: "no"
+    environment: &app-env
+      DATABASE_URL: postgres://${POSTGRES_USER:-desa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-desa_pendil}
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:3000}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:4000}
+      BLOB_READ_WRITE_TOKEN: ${BLOB_READ_WRITE_TOKEN:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin Desa}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment: *app-env
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  uploads:
