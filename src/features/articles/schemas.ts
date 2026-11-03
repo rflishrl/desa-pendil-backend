@@ -1,0 +1,71 @@
+import { z } from "zod";
+
+import {
+  optionalBlobImageUrl,
+  optionalText,
+  requiredText,
+} from "@/lib/schemas/common";
+
+export const ARTICLE_TYPES = ["berita", "artikel", "postingan"] as const;
+export const ARTICLE_STATUSES = ["draft", "published"] as const;
+
+export type ArticleType = (typeof ARTICLE_TYPES)[number];
+export type ArticleStatus = (typeof ARTICLE_STATUSES)[number];
+
+export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
+  berita: "Berita",
+  artikel: "Artikel",
+  postingan: "Postingan",
+};
+
+export const ARTICLE_STATUS_LABELS: Record<ArticleStatus, string> = {
+  draft: "Draf",
+  published: "Terbit",
+};
+
+const articleFields = {
+  title: requiredText("Judul", 200),
+  type: z.enum(ARTICLE_TYPES, { error: "Jenis konten tidak valid." }),
+  excerpt: optionalText("Ringkasan", 300),
+  content: z
+    .string()
+    .trim()
+    .min(1, "Isi tidak boleh kosong.")
+    .max(50_000, "Isi maksimal 50.000 karakter."),
+  thumbnail_url: optionalBlobImageUrl,
+  author: requiredText("Penulis", 80),
+  status: z.enum(ARTICLE_STATUSES, { error: "Status tidak valid." }),
+};
+
+/** Dipakai bersama form admin (client) dan route POST (server). */
+export const articleCreateSchema = z.object({
+  ...articleFields,
+  type: articleFields.type.default("berita"),
+  excerpt: articleFields.excerpt.default(""),
+  thumbnail_url: articleFields.thumbnail_url.default(""),
+  author: articleFields.author.default("Admin"),
+  status: articleFields.status.default("draft"),
+});
+
+/** PATCH: kolom yang tidak dikirim tidak diubah. */
+export const articleUpdateSchema = z.object(articleFields).partial();
+
+export type ArticleCreateInput = z.output<typeof articleCreateSchema>;
+export type ArticleUpdateInput = z.output<typeof articleUpdateSchema>;
+export type ArticleFormValues = z.input<typeof articleCreateSchema>;
+
+export interface ArticleDto {
+  id: string;
+  slug: string;
+  type: ArticleType;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  thumbnail: string | null;
+  author: string;
+  status: ArticleStatus;
+  /** Diisi database saat pertama kali terbit. */
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

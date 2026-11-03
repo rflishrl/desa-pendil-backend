@@ -1,68 +1,66 @@
 # Desa Pendil Backend
 
-API dan panel admin untuk website Desa Pendil. Mengelola berita, artikel, postingan, dan galeri.
+API dan panel admin untuk website Desa Pendil (`desa-pendil`). Mengelola berita, artikel, postingan, dan galeri foto.
 
-Next.js 15 · TypeScript · PostgreSQL + Drizzle ORM · Tailwind · Vercel Blob · Docker Compose
+**Stack:** Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form + Zod, Supabase (Postgres, Auth, RLS), Vercel Blob untuk foto, Vitest.
+
+## Alur data
+
+```
+browser -> frontend (desa-pendil) -> backend API -> Supabase
+                                       foto: Vercel Blob
+```
+
+Kode dibagi per lapisan: `route` -> `service` (aturan dan otorisasi) -> `repository` (query Supabase). `npm run check:boundaries` menjaga agar lapisan tidak saling menembus.
 
 ## Jalankan lokal
 
-```bash
-cp .env.example .env          # isi POSTGRES_PASSWORD, DATABASE_URL, AUTH_SECRET, ADMIN_PASSWORD
-docker compose up -d db       # PostgreSQL 17 di 127.0.0.1:5432
-npm install
-npm run db:migrate            # buat tabel
-npm run db:seed               # buat admin pertama dari ADMIN_EMAIL / ADMIN_PASSWORD
-npm run dev                   # http://localhost:4000  (admin: /admin)
-```
-
-Tanpa `BLOB_READ_WRITE_TOKEN`, gambar disimpan di `.uploads/` dan dilayani lewat `/uploads/...`.
-
-## Semua di Docker
-
-```bash
-docker compose --profile app up --build -d                  # db -> migrate -> app
-docker compose --profile app run --rm migrate npm run db:seed
-```
-
-Database hanya dibuka ke `127.0.0.1`. Image app berjalan sebagai user non-root. Upload tersimpan di volume `uploads`.
-
-## Deploy ke Vercel
-
-1. Buat database PostgreSQL (Neon lewat Vercel Marketplace) dan Blob store; hubungkan ke project.
-2. Set env: `DATABASE_URL` (pooled), `AUTH_SECRET`, `FRONTEND_ORIGINS`, `PUBLIC_BASE_URL`, `BLOB_READ_WRITE_TOKEN`.
-3. Jalankan migrasi dan seed sekali dari komputer Anda: `DATABASE_URL=... npm run db:migrate && npm run db:seed`.
-4. Deploy. Di frontend set `API_BASE_URL=https://<backend>/v1`.
+1. Buat proyek di Supabase, lalu salin `.env.example` ke `.env.local` dan isi nilainya.
+2. `npm install`
+3. `npm run db:push` untuk menerapkan skema di `supabase/migrations`.
+4. `npm run db:types` untuk membuat ulang `src/types/database.ts` setelah skema berubah.
+5. `npm run create-admin -- email@contoh.id` untuk membuat akun admin. Peran admin disimpan di `app_metadata.role`.
+6. `npm run dev`, lalu buka http://localhost:4000/login.
 
 ## API
 
-Publik (untuk frontend):
+Semua respons berbentuk `{ success: true, data }` atau `{ success: false, error }`. Daftar mengembalikan `data: { items, pagination }`.
 
-| Endpoint | Keterangan |
-| --- | --- |
-| `GET /v1/news?page=&limit=&q=` | Berita terbit. Bentuk sama dengan API lama: `{ data: [{ id, judul, isi, author, thumbnail, createdAt }] }` |
-| `GET /v1/news/:idOrSlug` | Satu berita |
-| `GET /v1/gallery` | `{ data: [{ id, src, alt, caption }] }` |
-| `GET /api/health` | Cek aplikasi dan database |
-
-Admin (butuh cookie sesi dari login `/admin`):
-
-| Endpoint | Keterangan |
-| --- | --- |
-| `GET/POST /api/v1/articles` | Daftar (semua status untuk admin) / buat |
-| `GET/PATCH/DELETE /api/v1/articles/:id` | Baca / ubah / hapus |
-| `POST /api/v1/media` | Upload gambar (`multipart`, field `file`, `folder`) |
-| `GET/POST /api/v1/gallery`, `PATCH/DELETE /api/v1/gallery/:id` | Kelola galeri |
-
-`type` artikel: `berita`, `artikel`, `postingan`. `status`: `draft`, `published`.
-Konten dengan `publishedAt` di masa depan baru tampil setelah waktunya tiba.
+| Metode | Alamat | Akses | Fungsi |
+| --- | --- | --- | --- |
+| GET | `/api/news/v1` | Publik | Berita yang terbit (`?q=&page=&limit=`) |
+| GET | `/api/news/v1/{id atau slug}` | Publik | Satu berita |
+| GET | `/api/gallery/v1` | Publik | Foto galeri berurutan |
+| GET, POST | `/api/admin/articles` | Admin | Daftar dan tambah konten |
+| GET, PATCH, DELETE | `/api/admin/articles/{id}` | Admin | Satu konten |
+| GET, POST | `/api/admin/gallery` | Admin | Daftar dan tambah foto |
+| GET, PATCH, DELETE | `/api/admin/gallery/{id}` | Admin | Satu foto |
+| POST | `/api/upload` | Admin | Unggah foto (JPG, PNG, WebP, maks 4 MB) |
+| GET | `/api/health` | Publik | Cek database |
 
 ## Keamanan
 
-- Password di-hash dengan scrypt; sesi JWT (HS256) di cookie `httpOnly`, `SameSite=Lax`, `Secure` di produksi.
-- Login dibatasi 5 percobaan per 15 menit per IP+email (memori per instance; di Vercel tambahkan Firewall rate limit).
-- Upload: maks. 4 MB (batas body Vercel 4,5 MB), hanya JPG/PNG/WebP, tipe dicek dari byte file.
-- Semua input divalidasi dengan zod; query memakai parameter (Drizzle).
+- RLS aktif di semua tabel. Publik hanya membaca konten berstatus `published` dan galeri. Hanya admin yang menulis.
+- `SUPABASE_SECRET_KEY` melewati RLS. Dipakai hanya untuk rate limit, cron pembersih foto, dan `create-admin`.
+- Tipe file foto diperiksa dari isi file, bukan dari nama.
+- Pembatas percobaan login tersimpan di database, jadi berlaku di semua instance.
+
+## Deploy ke Vercel
+
+1. Impor repo ke Vercel.
+2. Isi variabel dari `.env.example`: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `BLOB_READ_WRITE_TOKEN`, `ALLOWED_ORIGINS`, `FRONTEND_URL`, `REVALIDATE_SECRET`, `CRON_SECRET`.
+3. Buat Blob store di Vercel (Storage) dan hubungkan ke project.
+4. Isi `API_BASE_URL` di frontend dengan alamat backend, misalnya `https://backend.vercel.app/api`.
 
 ## Perintah
 
-`npm run typecheck` · `npm run lint` · `npm run build` · `npm run test:smoke` (uji end-to-end memakai PostgreSQL in-memory, tanpa Docker)
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` | Server dev di port 4000 |
+| `npm run typecheck` | Cek tipe |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest |
+| `npm run check:boundaries` | Cek batas lapisan |
+| `npm run db:push` | Terapkan migrasi ke Supabase |
+| `npm run db:types` | Buat ulang tipe database |
+| `npm run create-admin` | Buat akun admin |

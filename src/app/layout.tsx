@@ -1,27 +1,49 @@
-import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Fira_Code, Fira_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 
-const firaSans = Fira_Sans({
+import { QueryProvider } from "@/components/providers/query-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
+
+import "./globals.css";
+
+const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-montserrat",
   display: "swap",
-  variable: "--font-fira-sans",
 });
-const firaCode = Fira_Code({ subsets: ["latin"], display: "swap", variable: "--font-fira-code" });
 
 export const metadata: Metadata = {
-  title: { default: "Admin Desa Pendil", template: "%s | Admin Desa Pendil" },
-  description: "Panel pengelolaan konten website Desa Pendil.",
+  title: {
+    default: "Panel Admin | Desa Pendil",
+    template: "%s | Panel Admin Desa Pendil",
+  },
+  description: "Kelola berita, artikel, postingan, dan galeri Desa Pendil.",
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#F0A400" };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#221c1c",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={`${firaSans.variable} ${firaCode.variable}`}>
-      <body className="min-h-dvh bg-canvas font-sans text-ink antialiased">{children}</body>
+    <html lang="id" className={cn(montserrat.variable)}>
+      <body>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
+        >
+          Lewati ke konten utama
+        </a>
+        <QueryProvider>{children}</QueryProvider>
+        {/* Panel admin selalu terang, jadi toast tidak mengikuti tema sistem. */}
+        <Toaster theme="light" richColors closeButton position="top-right" />
+      </body>
     </html>
   );
 }

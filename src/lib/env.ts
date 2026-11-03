@@ -1,35 +1,66 @@
 import { z } from "zod";
 
-const schema = z.object({
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
-  FRONTEND_ORIGINS: z.string().default("http://localhost:3000"),
-  PUBLIC_BASE_URL: z.string().optional(),
+/** Thrown when the environment is incomplete. The message is for server logs only. */
+export class ConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConfigError";
+  }
+}
+
+/*
+ * Every value is read on the server only, so none of them use the public Next.js
+ * prefix. The browser never talks to Supabase.
+ */
+const serverEnvSchema = z.object({
+  SUPABASE_URL: z.url({
+    protocol: /^https?$/,
+    error: "must be the Supabase project URL (https://xxxx.supabase.co)",
+  }),
+  SUPABASE_PUBLISHABLE_KEY: z
+    .string()
+    .trim()
+    .startsWith(
+      "sb_publishable_",
+      "must be a publishable key (sb_publishable_...)",
+    ),
+  // Bypasses RLS. Only used in src/lib/supabase/admin.ts.
+  SUPABASE_SECRET_KEY: z
+    .string()
+    .trim()
+    .startsWith("sb_secret_", "must be a secret key (sb_secret_...)"),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
-  UPLOAD_DIR: z.string().default(".uploads"),
+  ALLOWED_ORIGINS: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
+  REVALIDATE_SECRET: z.string().optional(),
+  // Sent by Vercel Cron in the Authorization header. Empty = the cron endpoint is off.
+  CRON_SECRET: z.string().optional(),
 });
 
-export type Env = z.infer<typeof schema> & { allowedOrigins: string[] };
+export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
-let cached: Env | undefined;
+let cachedServerEnv: ServerEnv | undefined;
 
-/** Validated environment, read lazily so `next build` does not need secrets. */
-export function getEnv(): Env {
-  if (cached) return cached;
+/** Reads and validates the environment on first use (not at build time). */
+export function getServerEnv(): ServerEnv {
+  if (cachedServerEnv) return cachedServerEnv;
 
-  const parsed = schema.safeParse(process.env);
-  if (!parsed.success) {
-    const problems = parsed.error.issues
-      .map((i) => `${i.path.join(".")}: ${i.message}`)
+  const result = serverEnvSchema.safeParse(process.env);
+  if (!result.success) {
+    const problems = result.error.issues
+      .map((issue) => `${issue.path.join(".")} ${issue.message}`)
       .join("; ");
-    throw new Error(`Invalid environment: ${problems}`);
+    throw new ConfigError(`Incomplete environment: ${problems}`);
   }
 
-  cached = {
-    ...parsed.data,
-    allowedOrigins: parsed.data.FRONTEND_ORIGINS.split(",")
-      .map((o) => o.trim())
-      .filter(Boolean),
-  };
-  return cached;
+  cachedServerEnv = result.data;
+  return cachedServerEnv;
+}
+
+/** Frontend origins allowed to read the API from the browser (CORS). */
+export function getAllowedOrigins(): string[] {
+  return (process.env.ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }

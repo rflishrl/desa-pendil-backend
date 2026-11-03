@@ -1,15 +1,13 @@
-import { sql } from "drizzle-orm";
-import { getDb } from "@/db";
-import { json } from "@/lib/http";
+import { checkHealth } from "@/features/health/service";
+import { RATE_LIMITS } from "@/lib/api/rate-limits";
+import { withApi } from "@/lib/api/with-api";
 
+// Selalu dijalankan saat diminta, jangan disimpan di cache.
 export const dynamic = "force-dynamic";
+export const maxDuration = 10;
 
-/** Liveness + database check, used by the Docker HEALTHCHECK and uptime monitors. */
-export async function GET() {
-  try {
-    await getDb().execute(sql`select 1`);
-    return json({ status: "ok" });
-  } catch {
-    return json({ status: "error" }, { status: 503 });
-  }
-}
+/** 200 jika server dan database sehat, 503 jika database tidak terjangkau. */
+export const GET = withApi(
+  { access: "public", rateLimit: RATE_LIMITS.health },
+  async ({ supabase }) => ({ data: await checkHealth(supabase) }),
+);
