@@ -1,66 +1,86 @@
-# Desa Pendil Backend
+# Desa Pendil backend
 
-API dan panel admin untuk website Desa Pendil (`desa-pendil`). Mengelola berita, artikel, postingan, dan galeri foto.
+API and admin panel for the Desa Pendil website. Admins manage news, articles, posts, and gallery photos here, and the public site reads them through the API.
 
-**Stack:** Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form + Zod, Supabase (Postgres, Auth, RLS), Vercel Blob untuk foto, Vitest.
+Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form with Zod, Supabase (Postgres, Auth, RLS), Vercel Blob for photos, and Vitest.
 
-## Alur data
+## How it fits together
 
 ```
 browser -> frontend (desa-pendil) -> backend API -> Supabase
-                                       foto: Vercel Blob
+                                          photos: Vercel Blob
 ```
 
-Kode dibagi per lapisan: `route` -> `service` (aturan dan otorisasi) -> `repository` (query Supabase). `npm run check:boundaries` menjaga agar lapisan tidak saling menembus.
+Code is split by layer: route, then service (rules and authorization), then repository (Supabase queries). `npm run check:boundaries` fails if one layer reaches past its neighbor.
 
-## Jalankan lokal
+## Run locally
 
-1. Buat proyek di Supabase, lalu salin `.env.example` ke `.env.local` dan isi nilainya.
+1. Create a Supabase project. Copy `.env.example` to `.env.local` and fill in the values.
 2. `npm install`
-3. `npm run db:push` untuk menerapkan skema di `supabase/migrations`.
-4. `npm run db:types` untuk membuat ulang `src/types/database.ts` setelah skema berubah.
-5. `npm run create-admin -- email@contoh.id` untuk membuat akun admin. Peran admin disimpan di `app_metadata.role`.
-6. `npm run dev`, lalu buka http://localhost:4000/login.
+3. `npm run db:push` applies the migrations in `supabase/migrations`.
+4. `npm run db:types` regenerates `src/types/database.ts` after the schema changes.
+5. `npm run create-admin -- you@example.com` creates an admin account. It asks for the password in the terminal. The admin role is stored in `app_metadata.role`.
+6. `npm run dev`, then open http://localhost:4000/login.
+
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`) |
+| `SUPABASE_SECRET_KEY` | Secret key. Bypasses RLS, so keep it server side. Used for rate limiting, the photo cleanup cron, and `create-admin`. |
+| `SUPABASE_DB_URL` | Session pooler connection string. Local commands only (`db:push`, `db:types`). Not needed on Vercel. |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Vercel fills it in when you connect a Blob store. |
+| `ALLOWED_ORIGINS` | Frontend addresses allowed to call the API from a browser (CORS), separated by commas |
+| `FRONTEND_URL` | Frontend address, used to refresh its cache after an edit |
+| `REVALIDATE_SECRET` | Shared secret for that refresh call. Must match the frontend. |
+| `CRON_SECRET` | Secret for the daily photo cleanup. Vercel sends it automatically. |
+
+If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
 
 ## API
 
-Semua respons berbentuk `{ success: true, data }` atau `{ success: false, error }`. Daftar mengembalikan `data: { items, pagination }`.
+Every response is `{ "success": true, "data": ... }` or `{ "success": false, "error": "..." }`. Lists return `data: { items, pagination }`.
 
-| Metode | Alamat | Akses | Fungsi |
+| Method | Path | Access | Purpose |
 | --- | --- | --- | --- |
-| GET | `/api/news/v1` | Publik | Berita yang terbit (`?q=&page=&limit=`) |
-| GET | `/api/news/v1/{id atau slug}` | Publik | Satu berita |
-| GET | `/api/gallery/v1` | Publik | Foto galeri berurutan |
-| GET, POST | `/api/admin/articles` | Admin | Daftar dan tambah konten |
-| GET, PATCH, DELETE | `/api/admin/articles/{id}` | Admin | Satu konten |
-| GET, POST | `/api/admin/gallery` | Admin | Daftar dan tambah foto |
-| GET, PATCH, DELETE | `/api/admin/gallery/{id}` | Admin | Satu foto |
-| POST | `/api/upload` | Admin | Unggah foto (JPG, PNG, WebP, maks 4 MB) |
-| GET | `/api/health` | Publik | Cek database |
+| GET | `/api/news/v1` | Public | Published news (`?q=&page=&limit=`) |
+| GET | `/api/news/v1/{id or slug}` | Public | One news item |
+| GET | `/api/gallery/v1` | Public | Gallery photos in order |
+| GET, POST | `/api/admin/articles` | Admin | List and create content |
+| GET, PATCH, DELETE | `/api/admin/articles/{id}` | Admin | One content item |
+| GET, POST | `/api/admin/gallery` | Admin | List and add photos |
+| GET, PATCH, DELETE | `/api/admin/gallery/{id}` | Admin | One photo |
+| POST | `/api/upload` | Admin | Upload a photo (JPG, PNG, or WebP, up to 4 MB) |
+| GET | `/api/health` | Public | Database check |
 
-## Keamanan
+News, articles, and posts share one table. Only published items of type `berita` appear in the public API.
 
-- RLS aktif di semua tabel. Publik hanya membaca konten berstatus `published` dan galeri. Hanya admin yang menulis.
-- `SUPABASE_SECRET_KEY` melewati RLS. Dipakai hanya untuk rate limit, cron pembersih foto, dan `create-admin`.
-- Tipe file foto diperiksa dari isi file, bukan dari nama.
-- Pembatas percobaan login tersimpan di database, jadi berlaku di semua instance.
+## Security
 
-## Deploy ke Vercel
+- RLS is on for every table. The public can read published content and the gallery. Only admins can write or see drafts.
+- The secret key is used in three places only, listed in `src/lib/supabase/admin.ts`.
+- Upload type is checked from the file's bytes, not its name.
+- Login attempts are limited per IP. The counter lives in the database, so it holds across serverless instances.
+- Write requests must come from the same origin.
 
-1. Impor repo ke Vercel.
-2. Isi variabel dari `.env.example`: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `BLOB_READ_WRITE_TOKEN`, `ALLOWED_ORIGINS`, `FRONTEND_URL`, `REVALIDATE_SECRET`, `CRON_SECRET`.
-3. Buat Blob store di Vercel (Storage) dan hubungkan ke project.
-4. Isi `API_BASE_URL` di frontend dengan alamat backend, misalnya `https://backend.vercel.app/api`.
+## Deploy to Vercel
 
-## Perintah
+1. Import the repository and set the production branch.
+2. Add the variables above to the Production environment. `SUPABASE_DB_URL` is not needed.
+3. Under Storage, create a Blob store and connect it to the project.
+4. Redeploy, then open `/api/health`. It should return `"status":"ok"`.
+5. In the frontend project, set `API_BASE_URL` to `https://<this-project>.vercel.app/api` and redeploy it.
 
-| Perintah | Fungsi |
+## Scripts
+
+| Command | Purpose |
 | --- | --- |
-| `npm run dev` | Server dev di port 4000 |
-| `npm run typecheck` | Cek tipe |
+| `npm run dev` | Dev server on port 4000 |
+| `npm run typecheck` | Type check |
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest |
-| `npm run check:boundaries` | Cek batas lapisan |
-| `npm run db:push` | Terapkan migrasi ke Supabase |
-| `npm run db:types` | Buat ulang tipe database |
-| `npm run create-admin` | Buat akun admin |
+| `npm run check:boundaries` | Layer boundary check |
+| `npm run db:push` | Apply migrations to Supabase |
+| `npm run db:types` | Regenerate database types |
+| `npm run create-admin` | Create an admin account |
