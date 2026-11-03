@@ -22,8 +22,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getDashboardCounts } from "@/features/dashboard/service";
-import { RevalidateCard } from "@/features/revalidate/components/revalidate-card";
-import { getRevalidateStatus } from "@/features/revalidate/service";
 import { getCurrentAdmin } from "@/lib/auth/session";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -109,7 +107,6 @@ export default async function DashboardPage() {
     getCurrentAdmin(),
   ]);
   const counts = await getDashboardCounts(supabase, actor);
-  const revalidateStatus = getRevalidateStatus(actor);
   const blobReady = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
   return (
@@ -153,7 +150,7 @@ export default async function DashboardPage() {
             icon={ImagesIcon}
           />
         </div>
-</section>
+      </section>
 
       <section aria-labelledby="quick-title" className="mt-8">
         <h2 id="quick-title" className="font-heading text-lg font-bold">
@@ -173,18 +170,6 @@ export default async function DashboardPage() {
             </Link>
           </Button>
         </div>
-</section>
-
-      <section aria-labelledby="refresh-title" className="mt-10">
-        <h2 id="refresh-title" className="font-heading text-lg font-bold">
-          Penyegaran situs publik
-        </h2>
-        <p className="mt-1 mb-3 text-muted-foreground">
-          Setelah Anda menyimpan atau menghapus data, backend menyuruh situs
-          publik memperbarui halamannya. Jika tombol uji gagal, perubahan baru
-          tampil di situs setelah sekitar 1 jam.
-        </p>
-        <RevalidateCard status={revalidateStatus} />
       </section>
 
       <section aria-labelledby="api-title" className="mt-10">
