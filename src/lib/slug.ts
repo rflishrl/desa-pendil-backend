@@ -11,5 +11,5 @@ export function slugify(input: string): string {
 }
 
 export function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 7);
+  return crypto.randomUUID().slice(0, 6);
 }
