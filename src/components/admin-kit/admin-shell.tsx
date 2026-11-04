@@ -139,12 +139,16 @@ function AdminBreadcrumbs() {
   );
 }
 
+const DEFAULT_SITE_URL = "https://desa-pendil.vercel.app/";
+
 function UserMenu({
   email,
   variant = "footer",
+  siteUrl = DEFAULT_SITE_URL,
 }: {
   email: string;
   variant?: "header" | "footer";
+  siteUrl?: string;
 }) {
   const logout = useLogout();
   const busy = logout.isPending || logout.isSuccess;
@@ -181,6 +185,18 @@ function UserMenu({
               </p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="cursor-pointer"
+            >
+              <ExternalLinkIcon className="size-4" aria-hidden="true" />
+              <span>Lihat Situs</span>
+            </a>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => logout.mutate()}
@@ -248,6 +264,18 @@ function UserMenu({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="cursor-pointer"
+              >
+                <ExternalLinkIcon className="size-4" aria-hidden="true" />
+                <span>Lihat Situs</span>
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => logout.mutate()}
               disabled={busy}
@@ -274,6 +302,10 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const siteUrl =
+    frontendUrl && frontendUrl !== "http://localhost:3000"
+      ? frontendUrl
+      : DEFAULT_SITE_URL;
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -337,7 +369,7 @@ export function AdminShell({
         </SidebarContent>
 
         <SidebarFooter className="border-t border-sidebar-border/60">
-          <UserMenu email={email} variant="footer" />
+          <UserMenu email={email} variant="footer" siteUrl={siteUrl} />
         </SidebarFooter>
       </Sidebar>
 
@@ -354,20 +386,21 @@ export function AdminShell({
               asChild
               variant="outline"
               size="sm"
-              className="hidden h-8 gap-1.5 text-xs font-medium md:inline-flex"
+              className="h-8 gap-1.5 text-xs font-medium"
             >
               <a
-                href={frontendUrl || "/"}
+                href={siteUrl}
                 target="_blank"
                 rel="noreferrer"
                 title="Buka situs publik di tab baru"
               >
-                <span>Lihat Situs</span>
+                <span className="hidden sm:inline">Lihat Situs</span>
+                <span className="sm:hidden">Situs</span>
                 <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
               </a>
             </Button>
             <ThemeToggle />
-            <UserMenu email={email} variant="header" />
+            <UserMenu email={email} variant="header" siteUrl={siteUrl} />
           </div>
         </header>
 

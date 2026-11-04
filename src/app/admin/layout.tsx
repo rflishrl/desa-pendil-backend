@@ -15,8 +15,14 @@ export default async function AdminLayout({
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/login");
 
+  const frontendUrl =
+    process.env.FRONTEND_URL &&
+    process.env.FRONTEND_URL !== "http://localhost:3000"
+      ? process.env.FRONTEND_URL
+      : "https://desa-pendil.vercel.app/";
+
   return (
-    <AdminShell email={admin.email} frontendUrl={process.env.FRONTEND_URL}>
+    <AdminShell email={admin.email} frontendUrl={frontendUrl}>
       {children}
     </AdminShell>
   );

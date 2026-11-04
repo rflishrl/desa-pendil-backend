@@ -212,59 +212,46 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Aksi Cepat & Keterangan */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      {/* Aksi Cepat */}
+      <section aria-labelledby="quick-actions-heading">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle
+              id="quick-actions-heading"
+              className="text-base font-semibold"
+            >
               Aksi Cepat
             </CardTitle>
             <CardDescription>
-              Buat berita baru atau unggah dokumentasi ke galeri publik desa.
+              Pintasan cepat untuk mempublikasikan artikel berita atau menambahkan
+              foto ke galeri publik desa.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2.5">
-            <Button asChild className="h-10 w-full justify-start gap-2.5">
-              <Link href="/admin/articles/new">
-                <PlusIcon className="size-4" aria-hidden="true" />
-                <span>Tambah Konten Berita</span>
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="h-10 w-full justify-start gap-2.5"
-            >
-              <Link href="/admin/gallery/new">
-                <PlusIcon className="size-4" aria-hidden="true" />
-                <span>Unggah Foto Galeri</span>
-              </Link>
-            </Button>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                asChild
+                className="h-11 w-full justify-start gap-2.5 px-4 font-medium"
+              >
+                <Link href="/admin/articles/new">
+                  <PlusIcon className="size-4" aria-hidden="true" />
+                  <span>Tambah Konten Berita</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-11 w-full justify-start gap-2.5 px-4 font-medium"
+              >
+                <Link href="/admin/gallery/new">
+                  <PlusIcon className="size-4" aria-hidden="true" />
+                  <span>Unggah Foto Galeri</span>
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
-              Sinkronisasi Situs Publik
-            </CardTitle>
-            <CardDescription>
-              Informasi mengenai mekanisme penyegaran data ke halaman warga.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Setiap pembaruan artikel dan galeri secara otomatis akan dikirim
-              ke frontend publik Desa Pendil melalui endpoint revalidasi.
-            </p>
-            <p>
-              Pastikan pengaturan <code>FRONTEND_URL</code> dan{" "}
-              <code>REVALIDATE_SECRET</code> terpasang dengan baik pada server
-              produksi agar warga dapat melihat berita terbaru secara langsung.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      </section>
 
       {/* Tabel Alamat API */}
       <section aria-labelledby="api-heading">
