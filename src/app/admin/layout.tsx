@@ -15,5 +15,9 @@ export default async function AdminLayout({
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/login");
 
-  return <AdminShell email={admin.email}>{children}</AdminShell>;
+  return (
+    <AdminShell email={admin.email} frontendUrl={process.env.FRONTEND_URL}>
+      {children}
+    </AdminShell>
+  );
 }

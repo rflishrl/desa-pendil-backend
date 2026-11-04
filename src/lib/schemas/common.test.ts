@@ -54,12 +54,12 @@ describe("articleCreateSchema", () => {
 
   it("menolak isi kosong, jenis dan status yang tidak dikenal", () => {
     const base = { title: "Panen Raya", content: "Isi" };
-    expect(articleCreateSchema.safeParse({ ...base, content: " " }).success).toBe(
-      false,
-    );
-    expect(articleCreateSchema.safeParse({ ...base, type: "iklan" }).success).toBe(
-      false,
-    );
+    expect(
+      articleCreateSchema.safeParse({ ...base, content: " " }).success,
+    ).toBe(false);
+    expect(
+      articleCreateSchema.safeParse({ ...base, type: "iklan" }).success,
+    ).toBe(false);
     expect(
       articleCreateSchema.safeParse({ ...base, status: "scheduled" }).success,
     ).toBe(false);
@@ -93,9 +93,9 @@ describe("galleryCreateSchema", () => {
 
   it("urutan kosong dianggap 0, pecahan ditolak", () => {
     const base = { url: BLOB_URL, alt: "Balai desa" };
-    expect(galleryCreateSchema.parse({ ...base, sort_order: "" }).sort_order).toBe(
-      0,
-    );
+    expect(
+      galleryCreateSchema.parse({ ...base, sort_order: "" }).sort_order,
+    ).toBe(0);
     expect(
       galleryCreateSchema.safeParse({ ...base, sort_order: 1.5 }).success,
     ).toBe(false);
@@ -116,10 +116,12 @@ describe("listQuerySchema", () => {
   });
 
   it("nilai tidak masuk akal diganti nilai bawaan, bukan ditolak", () => {
-    expect(schema.parse({ page: "-3", limit: "99999", q: "  panen " })).toEqual({
-      q: "panen",
-      page: 1,
-      limit: 50,
-    });
+    expect(schema.parse({ page: "-3", limit: "99999", q: "  panen " })).toEqual(
+      {
+        q: "panen",
+        page: 1,
+        limit: 50,
+      },
+    );
   });
 });

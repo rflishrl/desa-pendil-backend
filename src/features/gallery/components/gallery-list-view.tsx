@@ -1,6 +1,11 @@
 "use client";
 
-import { AlertCircleIcon, ImagesIcon, PencilIcon, PlusIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  ImagesIcon,
+  PencilIcon,
+  PlusIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { DeleteDialog } from "@/components/admin-kit/delete-dialog";

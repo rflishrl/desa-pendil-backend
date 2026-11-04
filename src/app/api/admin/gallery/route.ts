@@ -1,7 +1,4 @@
-import {
-  createGalleryImage,
-  listGalleryFor,
-} from "@/features/gallery/service";
+import { createGalleryImage, listGalleryFor } from "@/features/gallery/service";
 import { parseQuery, readJson } from "@/lib/api/request";
 import { withApi } from "@/lib/api/with-api";
 import { listQuerySchema } from "@/lib/schemas/common";

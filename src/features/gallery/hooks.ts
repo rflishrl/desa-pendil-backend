@@ -12,10 +12,7 @@ import {
   galleryListOptions,
   type GalleryListParams,
 } from "@/features/gallery/queries";
-import type {
-  GalleryDto,
-  GalleryFormValues,
-} from "@/features/gallery/schemas";
+import type { GalleryDto, GalleryFormValues } from "@/features/gallery/schemas";
 import { api, type ApiClientError } from "@/lib/api/client";
 
 export function useGalleryList(params: GalleryListParams) {

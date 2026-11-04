@@ -1,40 +1,55 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { ThemeToggle } from "@/components/admin-kit/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { getCurrentAdmin } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Masuk" };
 export const dynamic = "force-dynamic";
 
-// Tidak ada data awal yang perlu di-prefetch: halaman ini hanya form login.
 export default async function LoginPage() {
   if (await getCurrentAdmin()) redirect("/admin");
 
   return (
     <main
       id="main-content"
-      className="flex min-h-dvh items-center justify-center bg-ink px-4 py-10"
+      className="relative flex min-h-dvh items-center justify-center bg-background px-4 py-10 transition-colors"
     >
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="inline-flex size-11 items-center justify-center rounded-md bg-brand font-heading text-xl font-extrabold text-ink"
-          >
-            DP
-          </span>
-          <div>
-            <h1 className="font-heading text-xl leading-tight font-extrabold uppercase">
-              Desa Pendil
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Masuk ke panel admin
-            </p>
-          </div>
-        </div>
-        <LoginForm />
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
       </div>
+
+      <Card className="w-full max-w-md border-border/80 bg-card shadow-lg">
+        <CardHeader className="space-y-3 pb-6">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand font-heading text-lg font-extrabold text-ink shadow-xs"
+            >
+              DP
+            </span>
+            <div>
+              <CardTitle className="font-heading text-xl font-extrabold uppercase tracking-wide text-foreground">
+                Desa Pendil
+              </CardTitle>
+              <CardDescription className="text-sm text-muted-foreground">
+                Masuk ke panel admin
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <LoginForm />
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-  blobImageUrl,
-  optionalText,
-  requiredText,
-} from "@/lib/schemas/common";
+import { blobImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
 
 const galleryFields = {
   url: blobImageUrl,

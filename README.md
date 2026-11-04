@@ -24,17 +24,17 @@ Code is split by layer: route, then service (rules and authorization), then repo
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`) |
-| `SUPABASE_SECRET_KEY` | Secret key. Bypasses RLS, so keep it server side. Used for rate limiting, the photo cleanup cron, and `create-admin`. |
-| `SUPABASE_DB_URL` | Session pooler connection string. Local commands only (`db:push`, `db:types`). Not needed on Vercel. |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Vercel fills it in when you connect a Blob store. |
-| `ALLOWED_ORIGINS` | Frontend addresses allowed to call the API from a browser (CORS), separated by commas |
-| `FRONTEND_URL` | Frontend address, used to refresh its cache after an edit |
-| `REVALIDATE_SECRET` | Shared secret for that refresh call. Must match the frontend. |
-| `CRON_SECRET` | Secret for the daily photo cleanup. Vercel sends it automatically. |
+| Variable                   | Purpose                                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`             | Supabase project URL                                                                                                  |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`)                                                                                |
+| `SUPABASE_SECRET_KEY`      | Secret key. Bypasses RLS, so keep it server side. Used for rate limiting, the photo cleanup cron, and `create-admin`. |
+| `SUPABASE_DB_URL`          | Session pooler connection string. Local commands only (`db:push`, `db:types`). Not needed on Vercel.                  |
+| `BLOB_READ_WRITE_TOKEN`    | Vercel Blob token. Photo upload stays off without it. Vercel fills it in when you connect a Blob store.               |
+| `ALLOWED_ORIGINS`          | Frontend addresses allowed to call the API from a browser (CORS), separated by commas                                 |
+| `FRONTEND_URL`             | Frontend address, used to refresh its cache after an edit                                                             |
+| `REVALIDATE_SECRET`        | Shared secret for that refresh call. Must match the frontend.                                                         |
+| `CRON_SECRET`              | Secret for the daily photo cleanup. Vercel sends it automatically.                                                    |
 
 If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
 
@@ -42,17 +42,17 @@ If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and th
 
 Every response is `{ "success": true, "data": ... }` or `{ "success": false, "error": "..." }`. Lists return `data: { items, pagination }`.
 
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/api/news/v1` | Public | Published news (`?q=&page=&limit=`) |
-| GET | `/api/news/v1/{id or slug}` | Public | One news item |
-| GET | `/api/gallery/v1` | Public | Gallery photos in order |
-| GET, POST | `/api/admin/articles` | Admin | List and create content |
-| GET, PATCH, DELETE | `/api/admin/articles/{id}` | Admin | One content item |
-| GET, POST | `/api/admin/gallery` | Admin | List and add photos |
-| GET, PATCH, DELETE | `/api/admin/gallery/{id}` | Admin | One photo |
-| POST | `/api/upload` | Admin | Upload a photo (JPG, PNG, or WebP, up to 4 MB) |
-| GET | `/api/health` | Public | Database check |
+| Method             | Path                        | Access | Purpose                                        |
+| ------------------ | --------------------------- | ------ | ---------------------------------------------- |
+| GET                | `/api/news/v1`              | Public | Published news (`?q=&page=&limit=`)            |
+| GET                | `/api/news/v1/{id or slug}` | Public | One news item                                  |
+| GET                | `/api/gallery/v1`           | Public | Gallery photos in order                        |
+| GET, POST          | `/api/admin/articles`       | Admin  | List and create content                        |
+| GET, PATCH, DELETE | `/api/admin/articles/{id}`  | Admin  | One content item                               |
+| GET, POST          | `/api/admin/gallery`        | Admin  | List and add photos                            |
+| GET, PATCH, DELETE | `/api/admin/gallery/{id}`   | Admin  | One photo                                      |
+| POST               | `/api/upload`               | Admin  | Upload a photo (JPG, PNG, or WebP, up to 4 MB) |
+| GET                | `/api/health`               | Public | Database check                                 |
 
 News, articles, and posts share one table. Only published items of type `berita` appear in the public API.
 
@@ -74,13 +74,13 @@ News, articles, and posts share one table. Only published items of type `berita`
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Dev server on port 4000 |
-| `npm run typecheck` | Type check |
-| `npm run lint` | ESLint |
-| `npm run test` | Vitest |
-| `npm run check:boundaries` | Layer boundary check |
-| `npm run db:push` | Apply migrations to Supabase |
-| `npm run db:types` | Regenerate database types |
-| `npm run create-admin` | Create an admin account |
+| Command                    | Purpose                      |
+| -------------------------- | ---------------------------- |
+| `npm run dev`              | Dev server on port 4000      |
+| `npm run typecheck`        | Type check                   |
+| `npm run lint`             | ESLint                       |
+| `npm run test`             | Vitest                       |
+| `npm run check:boundaries` | Layer boundary check         |
+| `npm run db:push`          | Apply migrations to Supabase |
+| `npm run db:types`         | Regenerate database types    |
+| `npm run create-admin`     | Create an admin account      |

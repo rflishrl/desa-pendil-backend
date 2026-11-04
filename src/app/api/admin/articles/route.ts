@@ -1,7 +1,4 @@
-import {
-  createArticle,
-  listArticlesFor,
-} from "@/features/articles/service";
+import { createArticle, listArticlesFor } from "@/features/articles/service";
 import { parseQuery, readJson } from "@/lib/api/request";
 import { withApi } from "@/lib/api/with-api";
 import { listQuerySchema } from "@/lib/schemas/common";

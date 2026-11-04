@@ -80,7 +80,10 @@ async function insertWithUniqueSlug(
       throw error;
     }
   }
-  throw new AppError("CONFLICT", "Judul ini sudah dipakai. Ubah sedikit judulnya.");
+  throw new AppError(
+    "CONFLICT",
+    "Judul ini sudah dipakai. Ubah sedikit judulnya.",
+  );
 }
 
 export async function createArticle(
@@ -112,7 +115,10 @@ export async function updateArticleById(
   const result = await updateArticle(supabase, id, input);
   if (!result) throw notFound(LABEL);
 
-  if (result.previousThumbnail && result.previousThumbnail !== result.item.thumbnail) {
+  if (
+    result.previousThumbnail &&
+    result.previousThumbnail !== result.item.thumbnail
+  ) {
     await deleteImage(result.previousThumbnail);
   }
   revalidateFrontend(REVALIDATE_TAGS);

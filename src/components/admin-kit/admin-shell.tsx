@@ -1,171 +1,380 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
 import {
+  ExternalLinkIcon,
   ImagesIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  MenuIcon,
+  MoreVerticalIcon,
   NewspaperIcon,
   type LucideIcon,
 } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { useLogout } from "@/features/auth/hooks";
-import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./theme-toggle";
 
-const NAV_ITEMS: { label: string; href: string; icon: LucideIcon }[] = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboardIcon },
   { label: "Konten", href: "/admin/articles", icon: NewspaperIcon },
   { label: "Galeri", href: "/admin/gallery", icon: ImagesIcon },
 ];
 
-function isActive(pathname: string, href: string) {
-  return href === "/admin"
-    ? pathname === href
-    : pathname === href || pathname.startsWith(`${href}/`);
+function isNavActive(pathname: string, href: string) {
+  if (href === "/admin") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function Nav({ onNavigate }: { onNavigate?: () => void }) {
+function getInitials(email: string): string {
+  if (!email) return "DP";
+  const namePart = email.split("@")[0] ?? "Admin";
+  return namePart.slice(0, 2).toUpperCase();
+}
+
+function AdminBreadcrumbs() {
   const pathname = usePathname();
+
+  const getBreadcrumbs = () => {
+    if (pathname === "/admin") {
+      return [{ label: "Dashboard", href: "/admin", isCurrent: true }];
+    }
+
+    const crumbs: { label: string; href?: string; isCurrent: boolean }[] = [
+      { label: "Dashboard", href: "/admin", isCurrent: false },
+    ];
+
+    if (pathname.startsWith("/admin/articles")) {
+      crumbs.push({
+        label: "Konten",
+        href: pathname === "/admin/articles" ? undefined : "/admin/articles",
+        isCurrent: pathname === "/admin/articles",
+      });
+      if (pathname === "/admin/articles/new") {
+        crumbs.push({ label: "Tambah Konten", isCurrent: true });
+      } else if (pathname.endsWith("/edit")) {
+        crumbs.push({ label: "Ubah Konten", isCurrent: true });
+      }
+    } else if (pathname.startsWith("/admin/gallery")) {
+      crumbs.push({
+        label: "Galeri",
+        href: pathname === "/admin/gallery" ? undefined : "/admin/gallery",
+        isCurrent: pathname === "/admin/gallery",
+      });
+      if (pathname === "/admin/gallery/new") {
+        crumbs.push({ label: "Tambah Foto", isCurrent: true });
+      } else if (pathname.endsWith("/edit")) {
+        crumbs.push({ label: "Ubah Foto", isCurrent: true });
+      }
+    }
+
+    return crumbs;
+  };
+
+  const crumbs = getBreadcrumbs();
+
   return (
-    <nav aria-label="Menu admin">
-      <ul className="space-y-1">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-          const active = isActive(pathname, href);
+    <Breadcrumb className="hidden sm:block">
+      <BreadcrumbList>
+        {crumbs.map((crumb, idx) => {
+          const isLast = idx === crumbs.length - 1;
           return (
-            <li key={href}>
-              <Link
-                href={href}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none",
-                  active
-                    ? "border-brand bg-white/10 text-white"
-                    : "border-transparent text-[#d2d2d2] hover:bg-white/5 hover:text-white",
+            <React.Fragment key={`${crumb.label}-${idx}`}>
+              <BreadcrumbItem>
+                {crumb.isCurrent || !crumb.href ? (
+                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={crumb.href}>{crumb.label}</Link>
+                  </BreadcrumbLink>
                 )}
-              >
-                <Icon className="size-[22px]" aria-hidden="true" />
-                {label}
-              </Link>
-            </li>
+              </BreadcrumbItem>
+              {!isLast && <BreadcrumbSeparator />}
+            </React.Fragment>
           );
         })}
-      </ul>
-    </nav>
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
 
-function Account({ email }: { email: string }) {
+function UserMenu({
+  email,
+  variant = "footer",
+}: {
+  email: string;
+  variant?: "header" | "footer";
+}) {
   const logout = useLogout();
   const busy = logout.isPending || logout.isSuccess;
+  const initials = getInitials(email);
+
+  if (variant === "header") {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="size-8 rounded-full"
+            aria-label="Menu akun admin"
+          >
+            <Avatar size="sm" className="size-7">
+              <AvatarFallback className="bg-brand/20 font-bold text-brand-strong">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-xs leading-none font-semibold text-foreground">
+                Administrator
+              </p>
+              <p
+                className="truncate text-xs leading-none text-muted-foreground"
+                title={email}
+              >
+                {email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => logout.mutate()}
+            disabled={busy}
+            variant="destructive"
+            className="cursor-pointer"
+          >
+            <LogOutIcon className="size-4" aria-hidden="true" />
+            <span>{busy ? "Keluar..." : "Keluar"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
-    <div className="space-y-2 border-t border-white/10 pt-4">
-      <p className="truncate px-3 text-sm text-[#d2d2d2]" title={email}>
-        {email}
-      </p>
-      <button
-        type="button"
-        onClick={() => logout.mutate()}
-        disabled={busy}
-        className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-md border-l-4 border-transparent px-3 text-sm font-semibold text-[#d2d2d2] transition-colors duration-200 hover:bg-white/5 hover:text-white disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none"
-      >
-        <LogOutIcon className="size-[22px]" aria-hidden="true" />
-        {busy ? "Keluar..." : "Keluar"}
-      </button>
-    </div>
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              aria-label="Menu akun"
+            >
+              <Avatar size="sm" className="size-8">
+                <AvatarFallback className="bg-brand/20 text-xs font-bold text-brand-strong">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold text-sidebar-foreground">
+                  Admin
+                </span>
+                <span
+                  className="truncate text-xs text-sidebar-foreground/70"
+                  title={email}
+                >
+                  {email}
+                </span>
+              </div>
+              <MoreVerticalIcon
+                className="ml-auto size-4 text-sidebar-foreground/60"
+                aria-hidden="true"
+              />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="right"
+            align="end"
+            sideOffset={4}
+            className="w-56"
+          >
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-xs leading-none font-semibold text-foreground">
+                  Administrator
+                </p>
+                <p
+                  className="truncate text-xs leading-none text-muted-foreground"
+                  title={email}
+                >
+                  {email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => logout.mutate()}
+              disabled={busy}
+              variant="destructive"
+              className="cursor-pointer"
+            >
+              <LogOutIcon className="size-4" aria-hidden="true" />
+              <span>{busy ? "Keluar..." : "Keluar"}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
 export function AdminShell({
   email,
+  frontendUrl,
   children,
 }: {
   email: string;
-  children: ReactNode;
+  frontendUrl?: string;
+  children: React.ReactNode;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
-      {/* Desktop: sidebar tetap */}
-      <aside className="hidden bg-ink p-5 text-white on-dark lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between">
-        <div className="space-y-8">
-          <Brand />
-          <Nav />
-        </div>
-        <Account email={email} />
-      </aside>
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar variant="inset" collapsible="icon">
+        <SidebarHeader className="border-b border-sidebar-border/60">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                asChild
+                className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <Link href="/admin">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand font-heading text-sm font-extrabold text-ink shadow-xs">
+                    DP
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-heading text-base font-extrabold text-sidebar-foreground">
+                      Desa Pendil
+                    </span>
+                    <span className="truncate text-xs font-medium text-sidebar-foreground/65">
+                      Panel Admin
+                    </span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-      {/* Mobile dan tablet: bar atas + menu samping (Sheet: fokus terkunci, Esc menutup) */}
-      <header className="sticky top-0 z-40 bg-ink text-white on-dark lg:hidden">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <Brand />
-          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger
-              className="-mr-2 inline-flex size-11 cursor-pointer items-center justify-center rounded-md"
-              aria-label="Buka menu"
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+                  const active = isNavActive(pathname, href);
+                  return (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={label}
+                        className={
+                          active
+                            ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs"
+                            : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
+                        }
+                      >
+                        <Link href={href}>
+                          <Icon className="size-4" aria-hidden="true" />
+                          <span>{label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-sidebar-border/60">
+          <UserMenu email={email} variant="footer" />
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md transition-colors sm:px-6">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <AdminBreadcrumbs />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="hidden h-8 gap-1.5 text-xs font-medium md:inline-flex"
             >
-              <MenuIcon className="size-[26px]" aria-hidden="true" />
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-72 border-white/10 bg-ink p-5 text-white on-dark"
-            >
-              <SheetTitle className="sr-only">Menu admin</SheetTitle>
-              <SheetDescription className="sr-only">
-                Pindah halaman atau keluar dari panel admin.
-              </SheetDescription>
-              <div className="flex h-full flex-col justify-between gap-8">
-                <div className="space-y-8">
-                  <Brand onNavigate={() => setMenuOpen(false)} />
-                  <Nav onNavigate={() => setMenuOpen(false)} />
-                </div>
-                <Account email={email} />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+              <a
+                href={frontendUrl || "/"}
+                target="_blank"
+                rel="noreferrer"
+                title="Buka situs publik di tab baru"
+              >
+                <span>Lihat Situs</span>
+                <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
+              </a>
+            </Button>
+            <ThemeToggle />
+            <UserMenu email={email} variant="header" />
+          </div>
+        </header>
 
-      <main
-        id="main-content"
-        className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-10"
-      >
-        <div className="mx-auto max-w-6xl">{children}</div>
-      </main>
-    </div>
-  );
-}
-
-function Brand({ onNavigate }: { onNavigate?: () => void }) {
-  return (
-    <Link
-      href="/admin"
-      onClick={onNavigate}
-      className="flex items-center gap-3"
-    >
-      <span
-        aria-hidden="true"
-        className="inline-flex size-9 items-center justify-center rounded-md bg-brand font-heading text-lg font-extrabold text-ink"
-      >
-        DP
-      </span>
-      <span className="font-heading text-base leading-tight font-extrabold tracking-wide uppercase">
-        Desa Pendil
-        <span className="block text-xs font-semibold tracking-normal text-[#d2d2d2] normal-case">
-          Panel Admin
-        </span>
-      </span>
-    </Link>
+        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

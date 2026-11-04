@@ -15,10 +15,7 @@ import {
   galleryDetailOptions,
   galleryListOptions,
 } from "@/features/gallery/queries";
-import {
-  getGalleryImage,
-  listGalleryFor,
-} from "@/features/gallery/service";
+import { getGalleryImage, listGalleryFor } from "@/features/gallery/service";
 import { AppError } from "@/lib/api/errors";
 import { getCurrentAdmin } from "@/lib/auth/session";
 import { getQueryClient } from "@/lib/query/query-client";

@@ -7,7 +7,11 @@ import {
   withSessionLifetime,
 } from "@/lib/supabase/cookie-options";
 
-type Written = { name: string; value: string; options: Record<string, unknown> };
+type Written = {
+  name: string;
+  value: string;
+  options: Record<string, unknown>;
+};
 
 const user = {
   id: "00000000-0000-0000-0000-000000000001",
@@ -46,21 +50,28 @@ describe("withSessionLifetime", () => {
 
 describe("the real Supabase client with these options", () => {
   function makeClient(written: Written[]) {
-    return createServerClient("https://example.supabase.co", "sb_publishable_test", {
-      cookieOptions: SESSION_COOKIE_OPTIONS,
-      cookies: {
-        getAll: () => [],
-        setAll: (list) => {
-          for (const c of list) {
-            written.push({
-              name: c.name,
-              value: c.value,
-              options: withSessionLifetime(c.options) as Record<string, unknown>,
-            });
-          }
+    return createServerClient(
+      "https://example.supabase.co",
+      "sb_publishable_test",
+      {
+        cookieOptions: SESSION_COOKIE_OPTIONS,
+        cookies: {
+          getAll: () => [],
+          setAll: (list) => {
+            for (const c of list) {
+              written.push({
+                name: c.name,
+                value: c.value,
+                options: withSessionLifetime(c.options) as Record<
+                  string,
+                  unknown
+                >,
+              });
+            }
+          },
         },
       },
-    });
+    );
   }
 
   it("writes the session cookie as httpOnly with a 7-day lifetime", async () => {
@@ -85,7 +96,9 @@ describe("the real Supabase client with these options", () => {
     });
 
     expect(error).toBeNull();
-    const session = written.filter((c) => c.value !== "" && c.name.startsWith("sb-"));
+    const session = written.filter(
+      (c) => c.value !== "" && c.name.startsWith("sb-"),
+    );
     expect(session.length).toBeGreaterThan(0);
     for (const cookie of session) {
       expect(cookie.options.httpOnly).toBe(true);
