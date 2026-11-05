@@ -2,7 +2,7 @@
 
 Backend API and Content Management System for the Desa Pendil public portal website ([desa-pendil.vercel.app](https://desa-pendil.vercel.app/)).
 
-Built with [Next.js 15](https://nextjs.org/) (App Router), [Payload CMS v3](https://payloadcms.com/), [PostgreSQL (Neon)](https://neon.tech/), [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) object storage, and [Bun](https://bun.sh/).
+Built with [Next.js 16](https://nextjs.org/) (App Router), [Payload CMS v3](https://payloadcms.com/), [PostgreSQL (Neon)](https://neon.tech/), [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) object storage, and [Bun](https://bun.sh/).
 
 ---
 
