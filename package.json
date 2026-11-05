@@ -23,9 +23,6 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "create-admin": "node --env-file=.env.local scripts/create-admin.mjs"
   },
-  "overrides": {
-    "undici": "8.12.4"
-  },
   "dependencies": {
     "@hookform/resolvers": "7.0.1",
     "@payloadcms/db-postgres": "^3.93.0",
@@ -50,7 +47,6 @@
     "server-only": "0.0.1",
     "sharp": "^0.35.5",
     "sonner": "2.0.8",
-    "undici": "^8.12.4",
     "zod": "4.6.7"
   },
   "devDependencies": {
