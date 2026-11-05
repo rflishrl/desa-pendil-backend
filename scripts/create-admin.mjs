@@ -1,8 +1,8 @@
-// Creates or updates an admin account in Supabase Auth with app_metadata.role = "admin".
-// Passwords are read interactively without echoing to protect terminal history.
+// Membuat (atau memperbarui) akun admin di Supabase Auth dengan app_metadata.role = "admin".
+// Password diketik di terminal dan tidak ditampilkan, jadi tidak tersimpan di riwayat shell.
 //
-// Requires in .env.local: SUPABASE_URL, SUPABASE_SECRET_KEY.
-// Usage: npm run create-admin -- admin@desapendil.id
+// Butuh di .env.local: SUPABASE_URL, SUPABASE_SECRET_KEY.
+// Pemakaian: npm run create-admin -- admin@desapendil.id
 import { createClient } from "@supabase/supabase-js";
 import { createInterface } from "node:readline";
 
@@ -18,7 +18,7 @@ if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
   process.exit(1);
 }
 
-/** Reads a line from the terminal without displaying input. */
+/** Membaca satu baris dari terminal tanpa menampilkan isinya. */
 function askHidden(question) {
   return new Promise((resolve) => {
     const rl = createInterface({
@@ -68,7 +68,7 @@ if (!error) {
   process.exit(0);
 }
 
-// User exists: update password and assign admin role.
+// Email sudah terdaftar: perbarui password dan jadikan admin.
 if (error.code !== "email_exists") {
   console.error("Gagal membuat admin:", error.message);
   process.exit(1);

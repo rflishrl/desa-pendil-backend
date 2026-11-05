@@ -1,13 +1,12 @@
-import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
 
 /*
  * Content Security Policy. Next.js inserts inline scripts for hydration, so
- * `'unsafe-inline'` is required without a nonce (a nonce forces dynamic rendering).
- * Locked down: script/fetch origins, objects, form actions, base URL, and frame ancestors.
- * Images allow HTTPS origins to accommodate legacy assets outside blob storage.
+ * `'unsafe-inline'` is retained without nonces (which would force all pages dynamic).
+ * Locked surfaces: script/fetch origins, objects, forms, base URL, and frame ancestors.
+ * Images allow any HTTPS origin to support legacy media hosted outside Blob storage.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -26,9 +25,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // Uploaded photos are stored on Vercel Blob.
     remotePatterns: [
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
-      { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
     ],
   },
   async headers() {
@@ -54,4 +53,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPayload(nextConfig);
+export default nextConfig;
