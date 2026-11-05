@@ -1,86 +1,112 @@
-# Desa Pendil backend
+# Desa Pendil Backend
 
-API and admin panel for the Desa Pendil website. Admins manage news, articles, posts, and gallery photos here, and the public site reads them through the API.
+Backend API and Content Management System for the Desa Pendil public portal website ([desa-pendil.vercel.app](https://desa-pendil.vercel.app/)).
 
-Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form with Zod, Supabase (Postgres, Auth, RLS), Vercel Blob for photos, and Vitest.
+Built with [Next.js 15](https://nextjs.org/) (App Router), [Payload CMS v3](https://payloadcms.com/), [PostgreSQL (Neon)](https://neon.tech/), [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) object storage, and [Bun](https://bun.sh/).
 
-## How it fits together
+---
+
+## Architecture Overview
+
+- **CMS Framework**: Payload CMS v3 embedded natively within Next.js App Router (`/admin`).
+- **Database**: Serverless PostgreSQL hosted on Neon via `@payloadcms/db-postgres`.
+- **Media Storage**: S3-compatible Cloudflare R2 storage via `@payloadcms/storage-s3`.
+- **Image Optimization**: Automated server-side compression using `Bun.Image` (with `Sharp` fallback), optimizing uploads to WebP (quality 85, max 2560px).
+- **Rich Text Editor**: Lexical editor (`@payloadcms/richtext-lexical`).
+- **Runtime**: Bun 1.4+.
 
 ```
-browser -> frontend (desa-pendil) -> backend API -> Supabase
-                                          photos: Vercel Blob
+Public Website (desa-pendil.vercel.app)
+       │
+       ▼ (REST / GraphQL)
+Next.js Backend (/api/*, /admin)
+  ├── Neon PostgreSQL (Database records & auth)
+  └── Cloudflare R2 (Media assets & uploads)
 ```
 
-Code is split by layer: route, then service (rules and authorization), then repository (Supabase queries). `npm run check:boundaries` fails if one layer reaches past its neighbor.
+---
 
-## Run locally
+## Collections
 
-1. Create a Supabase project. Copy `.env.example` to `.env.local` and fill in the values.
-2. `npm install`
-3. `npm run db:push` applies the migrations in `supabase/migrations`.
-4. `npm run db:types` regenerates `src/types/database.ts` after the schema changes.
-5. `npm run create-admin -- you@example.com` creates an admin account. It asks for the password in the terminal. The admin role is stored in `app_metadata.role`.
-6. `npm run dev`, then open http://localhost:4000/login.
+- **News (`news`)**: Village news articles with slug generation, publication dates, and Lexical rich-text content.
+- **Announcements (`announcements`)**: Public notices and announcements.
+- **Village Officials (`village-officials`)**: Profiles and organizational structure of village leadership.
+- **Services (`services`)**: Public service guides, requirements, and procedures for residents.
+- **Media (`media`)**: Image assets stored in Cloudflare R2 with automatic WebP compression.
+- **Users (`users`)**: Authenticated administrative accounts.
 
-## Environment variables
+---
 
-| Variable                   | Purpose                                                                                                               |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`             | Supabase project URL                                                                                                  |
-| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`)                                                                                |
-| `SUPABASE_SECRET_KEY`      | Secret key. Bypasses RLS, so keep it server side. Used for rate limiting, the photo cleanup cron, and `create-admin`. |
-| `SUPABASE_DB_URL`          | Session pooler connection string. Local commands only (`db:push`, `db:types`). Not needed on Vercel.                  |
-| `BLOB_READ_WRITE_TOKEN`    | Vercel Blob token. Photo upload stays off without it. Vercel fills it in when you connect a Blob store.               |
-| `ALLOWED_ORIGINS`          | Frontend addresses allowed to call the API from a browser (CORS), separated by commas                                 |
-| `FRONTEND_URL`             | Frontend address, used to refresh its cache after an edit                                                             |
-| `REVALIDATE_SECRET`        | Shared secret for that refresh call. Must match the frontend.                                                         |
-| `CRON_SECRET`              | Secret for the daily photo cleanup. Vercel sends it automatically.                                                    |
+## Getting Started Locally
 
-If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
+### Prerequisites
 
-## API
+- [Bun](https://bun.sh/) (v1.2+) installed on your machine.
+- A Neon PostgreSQL database instance.
+- A Cloudflare R2 bucket and API token.
 
-Every response is `{ "success": true, "data": ... }` or `{ "success": false, "error": "..." }`. Lists return `data: { items, pagination }`.
+### 1. Clone & Install Dependencies
 
-| Method             | Path                        | Access | Purpose                                        |
-| ------------------ | --------------------------- | ------ | ---------------------------------------------- |
-| GET                | `/api/news/v1`              | Public | Published news (`?q=&page=&limit=`)            |
-| GET                | `/api/news/v1/{id or slug}` | Public | One news item                                  |
-| GET                | `/api/gallery/v1`           | Public | Gallery photos in order                        |
-| GET, POST          | `/api/admin/articles`       | Admin  | List and create content                        |
-| GET, PATCH, DELETE | `/api/admin/articles/{id}`  | Admin  | One content item                               |
-| GET, POST          | `/api/admin/gallery`        | Admin  | List and add photos                            |
-| GET, PATCH, DELETE | `/api/admin/gallery/{id}`   | Admin  | One photo                                      |
-| POST               | `/api/upload`               | Admin  | Upload a photo (JPG, PNG, or WebP, up to 4 MB) |
-| GET                | `/api/health`               | Public | Database check                                 |
+```bash
+git clone https://github.com/rflishrl/desa-pendil-backend.git
+cd desa-pendil-backend
+bun install
+```
 
-News, articles, and posts share one table. Only published items of type `berita` appear in the public API.
+### 2. Configure Environment Variables
 
-## Security
+Copy the example environment file:
 
-- RLS is on for every table. The public can read published content and the gallery. Only admins can write or see drafts.
-- The secret key is used in three places only, listed in `src/lib/supabase/admin.ts`.
-- Upload type is checked from the file's bytes, not its name.
-- Login attempts are limited per IP. The counter lives in the database, so it holds across serverless instances.
-- Write requests must come from the same origin.
+```bash
+cp .env.example .env.local
+```
 
-## Deploy to Vercel
+Fill in your credentials in `.env.local`:
 
-1. Import the repository and set the production branch.
-2. Add the variables above to the Production environment. `SUPABASE_DB_URL` is not needed.
-3. Under Storage, create a Blob store and connect it to the project.
-4. Redeploy, then open `/api/health`. It should return `"status":"ok"`.
-5. In the frontend project, set `API_BASE_URL` to `https://<this-project>.vercel.app/api` and redeploy it.
+| Variable | Description |
+| :--- | :--- |
+| `DATABASE_URI` | Neon PostgreSQL pooled connection string (`postgresql://...@...pooler.../neondb?sslmode=require`) |
+| `PAYLOAD_SECRET` | Secret key for JWT hashing (`openssl rand -hex 32`) |
+| `R2_BUCKET` | Cloudflare R2 bucket name (`desa-pendil-media`) |
+| `R2_ENDPOINT` | Cloudflare R2 S3 API URL (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`) |
+| `R2_ACCESS_KEY_ID` | Cloudflare R2 API token Access Key ID |
+| `R2_SECRET_ACCESS_KEY` | Cloudflare R2 API token Secret Access Key |
+| `SERVER_URL` | Base application URL (`http://localhost:4000`) |
 
-## Scripts
+### 3. Run Development Server
 
-| Command                    | Purpose                      |
-| -------------------------- | ---------------------------- |
-| `npm run dev`              | Dev server on port 4000      |
-| `npm run typecheck`        | Type check                   |
-| `npm run lint`             | ESLint                       |
-| `npm run test`             | Vitest                       |
-| `npm run check:boundaries` | Layer boundary check         |
-| `npm run db:push`          | Apply migrations to Supabase |
-| `npm run db:types`         | Regenerate database types    |
-| `npm run create-admin`     | Create an admin account      |
+```bash
+bun run dev
+```
+
+The application runs on `http://localhost:4000`.
+- Admin Panel: `http://localhost:4000/admin`
+- REST API: `http://localhost:4000/api`
+- GraphQL API: `http://localhost:4000/api/graphql`
+
+On first visit to `/admin`, create your initial administrative account.
+
+---
+
+## Available Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `bun run dev` | Starts local Next.js development server on port 4000 |
+| `bun run build` | Compiles production build |
+| `bun run start` | Starts compiled production server on port 4000 |
+| `bun run lint` | Runs ESLint checks |
+| `bun run typecheck` | Runs TypeScript compiler checks |
+| `bun run check:boundaries` | Verifies architectural boundary rules |
+| `bun run generate:types` | Regenerates Payload TypeScript types (`src/payload-types.ts`) |
+| `bun run generate:importmap` | Regenerates Payload component import map |
+
+---
+
+## Deployment to Vercel
+
+1. Import the repository into your Vercel account.
+2. In **Project Settings** > **Environment Variables**, configure all variables from `.env.example`.
+   - Ensure `DATABASE_URI` uses the **pooled** connection string (containing `-pooler` in the host).
+   - Set `SERVER_URL` to your production Vercel domain (e.g. `https://desa-pendil-backend.vercel.app`).
+3. Deploy. Vercel automatically detects Bun and executes `bun install` followed by `bun run build`.
