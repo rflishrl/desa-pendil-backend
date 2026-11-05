@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-/** Host Vercel Blob tempat semua foto unggahan disimpan. */
+/** Hostname pattern for uploaded assets on Vercel Blob storage. */
 export const BLOB_HOSTNAME = /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/;
 
 /**
- * URL foto: hanya Vercel Blob (hasil unggah lewat /api/upload). Host lain ditolak supaya
- * frontend selalu bisa mengoptimasi gambarnya dan tidak bergantung pada situs lain.
+ * Image URL validation schema restricted to Vercel Blob storage.
+ * Ensures assets are served from managed storage for Next.js image optimization.
  */
 export const blobImageUrl = z
   .url({
@@ -28,8 +28,7 @@ export const optionalText = (label: string, max: number) =>
   z.string().trim().max(max, `${label} maksimal ${max} karakter.`);
 
 /**
- * Parameter daftar (?q=&page=&limit=). Nilai yang tidak masuk akal tidak ditolak,
- * tapi diganti nilai bawaan, sama seperti API lama.
+ * Query parameter schema (?q=&page=&limit=) falling back to safe defaults on invalid values.
  */
 export function listQuerySchema(defaultLimit: number) {
   return z.object({

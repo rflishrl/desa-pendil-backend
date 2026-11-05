@@ -5,10 +5,10 @@ import { del, list, put } from "@vercel/blob";
 import { AppError } from "@/lib/api/errors";
 import { log } from "@/lib/log";
 
-/** Semua foto unggahan disimpan di bawah awalan ini. */
+/** Storage prefix path for uploads. */
 export const UPLOAD_PREFIX = "desa-pendil/";
 
-const MAX_BYTES = 4 * 1024 * 1024; // Vercel membatasi body fungsi sekitar 4,5 MB.
+const MAX_BYTES = 4 * 1024 * 1024; // Stays under Vercel function payload threshold (~4.5MB).
 
 const SIGNATURES: Record<
   string,
@@ -49,7 +49,7 @@ function requireToken(): void {
   }
 }
 
-/** Memvalidasi file gambar (tipe, ukuran, dan isi file) lalu menyimpannya ke Vercel Blob. */
+/** Validates mime type, magic bytes, and file size before persisting to Vercel Blob. */
 export async function uploadImage(file: File, folder: string): Promise<string> {
   requireToken();
 
@@ -91,7 +91,7 @@ function isBlobUrl(url: string): boolean {
   }
 }
 
-/** Menghapus foto lama dari Blob. Gagal menghapus tidak membatalkan operasi utama. */
+/** Removes image from Blob storage. Failures are non-fatal and logged. */
 export async function deleteImage(url: string | undefined): Promise<void> {
   if (!url || !isBlobUrl(url) || !process.env.BLOB_READ_WRITE_TOKEN) return;
   try {
@@ -102,9 +102,8 @@ export async function deleteImage(url: string | undefined): Promise<void> {
 }
 
 /**
- * Menghapus foto yatim: foto di bawah `UPLOAD_PREFIX` yang tidak dipakai data mana pun
- * dan diunggah sebelum `olderThan`. Foto yatim muncul saat admin mengunggah foto lalu
- * membatalkan form, atau mengganti foto beberapa kali sebelum menyimpan.
+ * Deletes unreferenced assets under `UPLOAD_PREFIX` uploaded before `olderThan`.
+ * Collects orphaned uploads left behind by abandoned forms or replaced images.
  */
 export async function deleteOrphanImages(
   referenced: ReadonlySet<string>,

@@ -1,6 +1,6 @@
 import type { ApiResponse } from "@/lib/api/types";
 
-/** Error dari API (status HTTP + pesan yang aman ditampilkan). */
+/** API client error containing HTTP status and sanitized message. */
 export class ApiClientError extends Error {
   constructor(
     message: string,
@@ -21,9 +21,9 @@ interface RequestOptions {
 }
 
 function assertRelative(path: string): void {
-  // Hanya endpoint di domain sendiri. Menolak URL penuh dan "//host".
+  // Restrict to same-origin relative paths; reject absolute URLs and protocol-relative '//'.
   if (!path.startsWith("/") || path.startsWith("//")) {
-    throw new Error(`Endpoint harus berupa path relatif: ${path}`);
+    throw new Error(`Endpoint must be a relative path: ${path}`);
   }
 }
 
@@ -36,7 +36,7 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   );
 }
 
-/** Memanggil endpoint BFF, membaca ApiResponse, dan melempar ApiClientError jika gagal. */
+/** Sends request to internal BFF endpoint, validates ApiResponse, and returns typed data. */
 export async function apiRequest<T>(
   path: string,
   { method = "GET", json, body, signal }: RequestOptions = {},
@@ -57,14 +57,14 @@ export async function apiRequest<T>(
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
     throw new ApiClientError(
-      "Tidak dapat terhubung ke server. Periksa koneksi Anda.",
+      "Unable to connect to server. Please check your connection.",
       0,
     );
   }
 
   const payload: unknown = await response.json().catch(() => null);
   if (!isApiResponse(payload)) {
-    throw new ApiClientError("Respons server tidak dikenali.", response.status);
+    throw new ApiClientError("Unrecognized server response.", response.status);
   }
   if (!payload.success) {
     throw new ApiClientError(payload.error, response.status);
@@ -84,7 +84,7 @@ export const api = {
     apiRequest<T>(path, { method: "POST", body }),
 };
 
-/** Membuat query string dari objek, melewati nilai kosong. */
+/** Serializes object into URL query string, omitting undefined and empty values. */
 export function toQueryString(
   params: Record<string, string | number | undefined>,
 ): string {

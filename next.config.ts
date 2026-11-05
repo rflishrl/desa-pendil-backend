@@ -1,12 +1,13 @@
+import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
 
 /*
- * Content Security Policy. Next.js menyisipkan skrip inline untuk hidrasi, jadi
- * `'unsafe-inline'` tetap dibutuhkan tanpa nonce (nonce memaksa semua halaman dinamis).
- * Yang tetap dikunci: asal skrip/fetch, objek, form, base URL, dan pembingkaian.
- * Gambar boleh dari host https mana pun karena data lama bisa memakai host di luar Blob.
+ * Content Security Policy. Next.js inserts inline scripts for hydration, so
+ * `'unsafe-inline'` is required without a nonce (a nonce forces dynamic rendering).
+ * Locked down: script/fetch origins, objects, form actions, base URL, and frame ancestors.
+ * Images allow HTTPS origins to accommodate legacy assets outside blob storage.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -25,9 +26,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    // Foto yang diunggah disimpan di Vercel Blob.
     remotePatterns: [
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
     ],
   },
   async headers() {
@@ -53,4 +54,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPayload(nextConfig);

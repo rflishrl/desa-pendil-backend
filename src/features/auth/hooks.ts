@@ -24,7 +24,7 @@ export function useLogout() {
   return useMutation<unknown, ApiClientError>({
     mutationFn: () => api.post("/api/auth/logout"),
     onSuccess: () => {
-      // Data admin di cache browser dibuang supaya tidak terlihat setelah keluar.
+      // Clears admin cache on logout to prevent stale data display.
       queryClient.clear();
       router.replace("/login");
       router.refresh();

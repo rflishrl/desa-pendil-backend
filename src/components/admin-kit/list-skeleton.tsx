@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Kerangka daftar selama data dimuat; ukurannya sama dengan baris asli (foto 56 px). */
+/** Loading skeleton matching row dimensions of rendered table lists (56px thumbnail). */
 export function ListSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div

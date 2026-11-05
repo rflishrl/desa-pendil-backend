@@ -23,7 +23,7 @@ function toDto(row: GalleryRow): GalleryDto {
   };
 }
 
-/** Input -> kolom snake_case. Keterangan kosong disimpan sebagai NULL. */
+/** Maps input to snake_case columns. Empty captions serialize as NULL. */
 function toColumns(input: GalleryUpdateInput) {
   return {
     ...(input.url !== undefined && { url: input.url }),
@@ -33,7 +33,7 @@ function toColumns(input: GalleryUpdateInput) {
   };
 }
 
-/** Urutan kecil lebih dulu; jika sama, yang terbaru dulu. */
+/** Orders ascending by display rank, falling back to newest first. */
 export async function listGalleryImages(
   supabase: AppSupabaseClient,
   { limit, offset }: { limit: number; offset: number },

@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
-/** Foto kecil di daftar. `<img>` biasa: foto lama bisa berasal dari host di luar next/image. */
+/** Thumbnail image. Uses native <img> to support legacy images outside next/image remote patterns. */
 export function Thumb({ src, className }: { src: string; className?: string }) {
   return src ? (
-    // eslint-disable-next-line @next/next/no-img-element -- lihat komentar di atas
+    // eslint-disable-next-line @next/next/no-img-element -- see comment above
     <img
       src={src}
       alt=""

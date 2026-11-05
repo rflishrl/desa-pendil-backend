@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
-/** User yang sedang memanggil, dalam bentuk yang dipakai lapisan service. */
+/** Authenticated actor representing caller context in the service layer. */
 export interface Actor {
   id: string;
   email: string;
@@ -8,8 +8,8 @@ export interface Actor {
 }
 
 /**
- * Peran dibaca dari `app_metadata`, bukan `user_metadata`: app_metadata hanya bisa
- * diubah dengan secret key, sedangkan user_metadata bisa diubah user sendiri.
+ * Role is read from `app_metadata` rather than `user_metadata`: app_metadata is
+ * immutable to end users and can only be set via administrative service role keys.
  */
 export function toActor(user: User): Actor {
   const role = user.app_metadata?.role === "admin" ? "admin" : "user";

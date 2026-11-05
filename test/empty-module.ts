@@ -1,2 +1,2 @@
-// Pengganti kosong untuk paket `server-only` saat pengujian (lihat vitest.config.mts).
+// Empty mock for 'server-only' package during testing (see vitest.config.mts).
 export {};

@@ -23,14 +23,14 @@ type Access = "public" | "session" | "admin";
 
 interface WithApiOptions<A extends Access> {
   /**
-   * - `public`: tanpa sesi. Supabase berjalan sebagai `anon`, jadi RLS publik berlaku.
-   * - `session`: client dengan cookie sesi, tanpa syarat login (untuk login/logout).
-   * - `admin`: wajib login (getUser) dan berperan admin. Supabase memakai sesi user.
+   * - `public`: sessionless client using anonymous Supabase role for public RLS policies.
+   * - `session`: client reading session cookies without authentication requirements.
+   * - `admin`: requires authenticated session with admin role.
    */
   access: A;
-  /** Batas percobaan per IP. Wajib untuk endpoint publik yang menulis (mis. login). */
+  /** Rate limit configuration per client IP. Required for public mutation endpoints. */
   rateLimit?: RateLimitRule;
-  /** Cek header Origin untuk metode ubah-data. Bawaan: aktif. */
+  /** Verifies Origin header on state-changing methods. Defaults to true. */
   sameOrigin?: boolean;
 }
 
@@ -54,11 +54,8 @@ interface RouteContext<P> {
 }
 
 /*
- * Semua respons API, termasuk GET publik, tidak boleh disimpan cache bersama (CDN).
- * Frontend (desa-pendil) sudah punya cache sendiri selama 1 jam yang dibuang lewat tag saat admin
- * menyimpan atau menghapus data. Kalau CDN backend ikut menyimpan daftar lama, frontend bisa
- * mengambil daftar lama itu tepat saat menyegarkan halaman, dan data yang sudah dihapus
- * tampil lagi sampai 1 jam.
+ * API responses are marked no-store to prevent edge CDN caching.
+ * The frontend maintains its own tagged cache evicted on admin mutations.
  */
 const NO_STORE = "private, no-store";
 
@@ -117,9 +114,9 @@ function applyCors(request: Request, response: Response): void {
 }
 
 /**
- * Pembungkus semua Route Handler. Urutannya:
- * cek Origin -> rate limit -> sesi & peran -> handler -> ApiResponse.
- * Semua error dipetakan ke status HTTP; detail teknis hanya masuk log (dengan requestId).
+ * Wraps Route Handlers:
+ * verifies Origin -> checks rate limit -> authenticates session -> invokes handler -> returns ApiResponse.
+ * Maps application errors to HTTP status codes with structured logging.
  */
 export function withApi<
   A extends Access,
@@ -173,7 +170,7 @@ export function withApi<
         resolved = { request, params, requestId, supabase, actor: null };
       }
 
-      // Aman: `actor` terisi jika dan hanya jika access === "admin" (dicek di atas).
+      // Type assertion safe: actor is populated if and only if access === "admin"
       const result = await handler(resolved as unknown as ApiContext<A, P>);
       response = json(
         { success: true, data: result.data },

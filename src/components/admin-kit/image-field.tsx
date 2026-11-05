@@ -29,7 +29,7 @@ interface ImageFieldProps {
   error?: string;
 }
 
-/** Pilih foto (diunggah langsung ke Vercel Blob) atau tempel alamat foto yang sudah ada. */
+/** Image upload field (uploads directly to Blob storage) with manual URL fallback. */
 export function ImageField({
   value,
   onChange,
@@ -68,7 +68,7 @@ export function ImageField({
 
       <div className="relative aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-card">
         {value ? (
-          // eslint-disable-next-line @next/next/no-img-element -- pratinjau alamat yang diketik bebas
+          // eslint-disable-next-line @next/next/no-img-element -- arbitrary URL preview
           <img
             src={value}
             alt="Pratinjau foto"

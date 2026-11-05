@@ -25,7 +25,7 @@ export function LoginForm() {
     defaultValues: { email: "", password: "" },
   });
 
-  // Pesan dari server (mis. password salah) mendapat fokus agar langsung terbaca.
+  // Focus server error message so screen readers announce it immediately.
   useEffect(() => {
     if (login.error) alertRef.current?.focus();
   }, [login.error]);

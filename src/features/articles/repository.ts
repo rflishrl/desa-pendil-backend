@@ -31,7 +31,7 @@ function toDto(row: ArticleRow): ArticleDto {
   };
 }
 
-/** Input -> kolom snake_case. Teks kosong disimpan sebagai NULL; kolom yang tidak dikirim tidak ikut. */
+/** Maps input to snake_case columns. Empty strings serialize as NULL; omitted fields are excluded. */
 function toColumns(input: ArticleUpdateInput) {
   return {
     ...(input.title !== undefined && { title: input.title }),
@@ -50,7 +50,7 @@ export interface ListParams {
   q?: string;
   limit: number;
   offset: number;
-  /** `true`: hanya berita yang terbit. RLS juga menyaring untuk pembaca publik. */
+  /** When true, queries published articles only; RLS enforces equivalent public access. */
   publicOnly: boolean;
 }
 
@@ -123,7 +123,7 @@ export async function insertArticle(
   return toDto(data);
 }
 
-/** Baris dikunci di database (RPC update_article). `null` jika id tidak ada. */
+/** Updates row with row-level database lock (RPC update_article); returns null if not found. */
 export async function updateArticle(
   supabase: AppSupabaseClient,
   id: string,

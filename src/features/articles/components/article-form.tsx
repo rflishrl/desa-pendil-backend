@@ -39,7 +39,7 @@ const Required = () => (
 const SELECT_CLASS =
   "h-11 w-full rounded-lg border border-input bg-card px-3 text-sm focus-visible:ring-3 focus-visible:ring-ring/50";
 
-/** Form tambah/ubah konten. Skema Zod-nya sama dengan route. */
+/** Article create and edit form sharing validation schemas with API routes. */
 export function ArticleForm({ article }: { article?: ArticleDto }) {
   const save = useSaveArticle(article?.id);
   const alertRef = useRef<HTMLDivElement>(null);

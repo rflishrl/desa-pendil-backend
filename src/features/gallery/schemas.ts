@@ -6,7 +6,7 @@ const galleryFields = {
   url: blobImageUrl,
   alt: requiredText("Teks alternatif", 200),
   caption: optionalText("Keterangan", 300),
-  // Kolom kosong di form dianggap 0 (urutan bawaan).
+  // Blank form inputs default to 0 for display order.
   sort_order: z.preprocess(
     (value) => (value === "" || value === null ? 0 : value),
     z.coerce
@@ -17,14 +17,14 @@ const galleryFields = {
   ),
 };
 
-/** Dipakai bersama form admin (client) dan route POST (server). */
+/** Shared validation schema for admin form (client) and POST route (server). */
 export const galleryCreateSchema = z.object({
   ...galleryFields,
   caption: galleryFields.caption.default(""),
   sort_order: galleryFields.sort_order.default(0),
 });
 
-/** PATCH: kolom yang tidak dikirim tidak diubah. */
+/** PATCH schema: preserves omitted fields without overriding existing values. */
 export const galleryUpdateSchema = z.object(galleryFields).partial();
 
 export type GalleryCreateInput = z.output<typeof galleryCreateSchema>;

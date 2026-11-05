@@ -2,9 +2,9 @@ import type { Actor } from "@/lib/auth/actor";
 import { AppError } from "@/lib/api/errors";
 
 /**
- * Aturan otorisasi lapisan service. Data Desa Pendil tidak punya pemilik per user;
- * semua penulisan milik peran admin. Dicek di sini (bukan hanya di route) supaya
- * service aman dipanggil dari mana pun, dan RLS di database menjadi lapisan kedua.
+ * Service-layer authorization rules.
+ * Enforces admin privileges at the service boundary so functions remain secure
+ * independently of calling routes, with database RLS providing secondary defense.
  */
 export function assertAdmin(actor: Actor | null): asserts actor is Actor {
   if (!actor) {

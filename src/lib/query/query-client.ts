@@ -6,9 +6,9 @@ function makeQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Bawaan 30 detik; tiap fitur menetapkan staleTime sendiri di queryOptions.
+        // Default 30s; feature queries override staleTime via queryOptions.
         staleTime: 30_000,
-        // Error 4xx (mis. 401, 404) tidak membaik jika diulang.
+        // Do not retry 4xx client errors (e.g. 401, 404).
         retry: (failureCount, error) =>
           !(
             error instanceof ApiClientError &&
@@ -23,8 +23,8 @@ function makeQueryClient(): QueryClient {
 let browserQueryClient: QueryClient | undefined;
 
 /**
- * Server: QueryClient baru per request (data tidak bocor antar pengguna).
- * Browser: satu QueryClient untuk seluruh sesi tab.
+ * Server: returns fresh QueryClient per request to avoid cross-request data leakage.
+ * Browser: retains singleton QueryClient for active session.
  */
 export function getQueryClient(): QueryClient {
   if (isServer) return makeQueryClient();

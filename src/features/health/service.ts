@@ -9,7 +9,7 @@ export interface HealthStatus {
   database: "ok";
 }
 
-/** Memastikan server hidup dan database bisa dijangkau. Detail error hanya masuk log. */
+/** Health check verifying application server and database connectivity. */
 export async function checkHealth(
   supabase: AppSupabaseClient,
 ): Promise<HealthStatus> {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Dipakai bersama form login (client) dan route POST /api/auth/login (server). */
+/** Shared validation schema for login form (client) and POST route (server). */
 export const loginSchema = z.object({
   // Dirapikan dulu (spasi, huruf besar), baru dicek formatnya.
   email: z.string().trim().toLowerCase().pipe(z.email("Email tidak valid.")),

@@ -2,7 +2,7 @@ import { after } from "next/server";
 
 import { log } from "@/lib/log";
 
-/** Pengaturan penyegaran, dibaca dari environment saat dipakai (bukan saat build). */
+/** Revalidation settings read at runtime from environment variables. */
 export function readRevalidateConfig(): {
   baseUrl: string | undefined;
   secret: string | undefined;
@@ -20,9 +20,8 @@ export type RevalidateOutcome =
   | { state: "unreachable"; reason: string };
 
 /**
- * Memanggil `POST {FRONTEND_URL}/api/revalidate` dan melaporkan apa yang terjadi.
- * Tidak pernah melempar error: kegagalan dikembalikan sebagai hasil, supaya pemanggil
- * (penyimpanan data, atau tombol uji di dashboard) bisa memutuskan sendiri.
+ * Calls `POST {FRONTEND_URL}/api/revalidate` and returns the outcome.
+ * Catches errors and returns them as values so callers can handle fallback.
  */
 export async function sendRevalidate(
   tags: string[],
@@ -62,21 +61,16 @@ export async function sendRevalidate(
 }
 
 /**
- * Memberi tahu frontend bahwa data berubah, supaya cache-nya dibuang dan perubahan
- * tampil langsung. Dijalankan setelah respons dikirim, jadi admin tidak menunggu.
- *
- * Butuh `FRONTEND_URL` dan `REVALIDATE_SECRET`. Jika salah satunya kosong, frontend
- * memperbarui datanya saat cache 1 jam habis. Setiap hasilnya dicatat di Logs Vercel
- * (baris `revalidate ...`), dan kegagalan tidak menggagalkan penyimpanan data.
- * Dashboard admin punya tombol "Uji penyegaran" untuk memeriksa pengaturan ini.
+ * Notifies frontend that data has changed, purging stale cache entries.
+ * Runs via Next.js `after()` so mutations are not blocked by webhook latency.
  */
 export function revalidateFrontend(tags: string[]) {
   const { baseUrl, secret } = readRevalidateConfig();
   if (!baseUrl || !secret) {
-    // Tidak diam-diam: tanpa ini, data yang dihapus baru hilang dari situs setelah 1 jam.
+    // Missing configuration prevents immediate cache eviction
     log(
       "warn",
-      "revalidate dilewati: FRONTEND_URL atau REVALIDATE_SECRET kosong",
+      "revalidate skipped: FRONTEND_URL or REVALIDATE_SECRET is missing",
       { tags, hasFrontendUrl: Boolean(baseUrl), hasSecret: Boolean(secret) },
     );
     return;
@@ -86,7 +80,7 @@ export function revalidateFrontend(tags: string[]) {
     const outcome = await sendRevalidate(tags);
     switch (outcome.state) {
       case "ok":
-        log("info", "revalidate terkirim", {
+        log("info", "revalidate dispatched", {
           tags,
           revalidated: outcome.revalidated,
         });
@@ -94,7 +88,7 @@ export function revalidateFrontend(tags: string[]) {
       case "rejected":
         log(
           "error",
-          `revalidate ditolak: frontend menjawab HTTP ${outcome.status}`,
+          `revalidate rejected: frontend responded with HTTP ${outcome.status}`,
           {
             tags,
             status: outcome.status,
@@ -102,7 +96,7 @@ export function revalidateFrontend(tags: string[]) {
         );
         break;
       case "unreachable":
-        log("error", "revalidate gagal: frontend tidak terjangkau", {
+        log("error", "revalidate failed: frontend unreachable", {
           tags,
           reason: outcome.reason,
         });

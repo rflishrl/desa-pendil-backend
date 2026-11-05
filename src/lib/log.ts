@@ -11,7 +11,7 @@ function describe(error: unknown): unknown {
   return error;
 }
 
-/** Log satu baris JSON, supaya mudah dicari per `requestId` di Vercel Logs. */
+/** Emits single-line JSON logs to simplify correlation by `requestId` in log drains. */
 export function log(
   level: Level,
   message: string,

@@ -31,7 +31,7 @@ const MAX_SLUG_ATTEMPTS = 5;
 type Viewer =
   { audience: "public" } | { audience: "admin"; actor: Actor | null };
 
-/** Publik: hanya berita yang terbit, 50 per halaman. Admin: semua jenis dan draf, 10 per halaman. */
+/** Public: published articles only, 50/page. Admin: all entries and drafts, 10/page. */
 export async function listArticlesFor(
   supabase: AppSupabaseClient,
   viewer: Viewer,
@@ -65,7 +65,7 @@ export async function getArticle(
   return article;
 }
 
-/** Slug yang bentrok dicoba lagi dengan akhiran acak; unik dijamin oleh constraint database. */
+/** Retries slug collisions with random suffix; database constraint guarantees uniqueness. */
 async function insertWithUniqueSlug(
   supabase: AppSupabaseClient,
   input: ArticleCreateInput,

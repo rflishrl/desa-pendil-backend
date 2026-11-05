@@ -14,9 +14,9 @@ import type { Database } from "@/types/database";
 export type AppSupabaseClient = SupabaseClient<Database>;
 
 /**
- * Client dengan sesi user dari cookie (publishable key). Ini pilihan bawaan:
- * query berjalan sebagai user yang login, jadi RLS berlaku.
- * Buat baru untuk setiap request; jangan disimpan di variabel modul.
+ * Client using session cookies via publishable key.
+ * Queries execute in the user context with RLS policies applied.
+ * Creates a fresh instance per request; do not store in module scope.
  */
 export async function createSessionClient(): Promise<AppSupabaseClient> {
   const env = getServerEnv();
@@ -37,8 +37,8 @@ export async function createSessionClient(): Promise<AppSupabaseClient> {
               cookieStore.set(name, value, withSessionLifetime(options));
             }
           } catch {
-            // Dipanggil dari Server Component yang tidak boleh menulis cookie.
-            // Aman diabaikan: src/proxy.ts yang memperbarui sesi.
+            // Invoked from Server Components which cannot mutate cookies.
+            // Safe to ignore: proxy.ts handles session token renewal.
           }
         },
       },
@@ -47,8 +47,8 @@ export async function createSessionClient(): Promise<AppSupabaseClient> {
 }
 
 /**
- * Client tanpa sesi untuk pembaca publik (peran `anon`). Tidak membaca atau menulis
- * cookie, jadi respons publik tidak pernah membawa sesi siapa pun.
+ * Sessionless client for public queries using anonymous role (`anon`).
+ * Does not read or write cookies, ensuring public responses remain session-free.
  */
 export function createPublicClient(): AppSupabaseClient {
   const env = getServerEnv();

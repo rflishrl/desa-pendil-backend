@@ -1,11 +1,11 @@
 /**
- * Memeriksa batas lapisan:
- * 1. File 'use client' tidak boleh mengimpor Supabase, service, repository, atau
- *    modul server lain, dan tidak boleh fetch ke URL luar domain.
- * 2. Tidak boleh ada env berawalan NEXT_PUBLIC_ di kode atau .env.example.
- * 3. Setiap route.ts di src/app/api harus memakai withApi().
+ * Verifies architectural boundaries:
+ * 1. 'use client' files must not import Supabase, service, repository, or
+ *    other server modules, and must not fetch from external domains.
+ * 2. No NEXT_PUBLIC_ prefixed environment variables allowed in code or .env.example.
+ * 3. Every route.ts under src/app/api must use withApi().
  *
- * Jalankan: npm run check:boundaries
+ * Usage: bun run check:boundaries
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -39,32 +39,32 @@ for (const file of walk(join(root, "src"))) {
   if (/^\s*["']use client["']/.test(text)) {
     for (const pattern of FORBIDDEN_IN_CLIENT) {
       if (pattern.test(text))
-        problems.push(`${rel}: client mengimpor modul server (${pattern})`);
+        problems.push(`${rel}: client imports server module (${pattern})`);
     }
     if (EXTERNAL_FETCH.test(text))
-      problems.push(`${rel}: client fetch ke luar domain`);
+      problems.push(`${rel}: client external fetch`);
   }
 
   if (!isTest && /NEXT_PUBLIC_/.test(text))
-    problems.push(`${rel}: memakai NEXT_PUBLIC_`);
+    problems.push(`${rel}: uses NEXT_PUBLIC_`);
 
   if (
     /[\\/]app[\\/]api[\\/].*[\\/]route\.ts$/.test(file) &&
     !/withApi(<[^>]*>)?\(/.test(text)
   ) {
-    problems.push(`${rel}: route tanpa withApi()`);
+    problems.push(`${rel}: route without withApi()`);
   }
 }
 
 if (
   /^\s*NEXT_PUBLIC_/m.test(readFileSync(join(root, ".env.example"), "utf8"))
 ) {
-  problems.push(".env.example: memakai NEXT_PUBLIC_");
+  problems.push(".env.example: uses NEXT_PUBLIC_");
 }
 
 if (problems.length > 0) {
-  console.error(`Batas lapisan dilanggar (${problems.length}):`);
+  console.error(`Boundary violations (${problems.length}):`);
   for (const problem of problems) console.error(`- ${problem}`);
   process.exit(1);
 }
-console.log("Batas lapisan aman.");
+console.log("Boundary checks passed.");

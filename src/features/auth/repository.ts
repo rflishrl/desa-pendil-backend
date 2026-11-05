@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 
 import type { AppSupabaseClient } from "@/lib/supabase/server";
 
-/** Login email + password. Mengembalikan user, atau `null` jika kredensial ditolak. */
+/** Authenticates with email and password; returns User or null if invalid. */
 export async function signInWithPassword(
   supabase: AppSupabaseClient,
   email: string,
@@ -17,7 +17,7 @@ export async function signInWithPassword(
   return { user: data.user, error };
 }
 
-/** Mengakhiri sesi di Supabase dan menghapus cookie sesi. */
+/** Terminates session in Supabase and clears session cookies. */
 export async function signOut(supabase: AppSupabaseClient): Promise<unknown> {
   const { error } = await supabase.auth.signOut();
   return error;

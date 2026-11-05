@@ -3,8 +3,8 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { AppError } from "@/lib/api/errors";
 
 /**
- * Menerjemahkan error Supabase/Postgres menjadi AppError. Pesan mentah tidak pernah
- * dikirim ke pemanggil; ia ikut sebagai `cause` dan hanya muncul di log server.
+ * Maps PostgrestError to typed AppError.
+ * Raw database error messages are attached to `cause` for server logs and hidden from clients.
  */
 export function toAppError(error: PostgrestError, action: string): AppError {
   const cause = error;

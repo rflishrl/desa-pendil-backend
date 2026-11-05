@@ -9,11 +9,9 @@ import {
 import type { Database } from "@/types/database";
 
 /**
- * Memperbarui token sesi Supabase sebelum halaman dirender. Server Component tidak
- * boleh menulis cookie, jadi pembaruan token harus terjadi di sini.
- *
- * Yang dikembalikan harus `response` terakhir yang dibuat `setAll`; respons lain tidak
- * membawa cookie baru, dan user akan keluar sendiri pada request berikutnya.
+ * Refreshes Supabase session tokens before Next.js page rendering.
+ * Server Components cannot mutate cookies, so session token refreshes occur here.
+ * Returns the final NextResponse constructed by `setAll` to preserve updated cookies.
  */
 export async function updateSession(
   request: NextRequest,
@@ -38,7 +36,7 @@ export async function updateSession(
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, withSessionLifetime(options));
           }
-          // Header anti-cache dari library: respons yang membawa sesi tidak boleh di-cache.
+          // Anti-caching headers from SSR client: session-bearing responses must not be cached.
           for (const [key, value] of Object.entries(headers)) {
             response.headers.set(key, value);
           }
@@ -47,8 +45,8 @@ export async function updateSession(
     },
   );
 
-  // Jangan taruh kode lain di antara createServerClient dan getClaims().
-  // getClaims() memverifikasi token dan memperbaruinya jika hampir kedaluwarsa.
+  // Avoid intervening code between createServerClient and getClaims().
+  // getClaims() validates the JWT token and refreshes near-expiry sessions.
   await supabase.auth.getClaims();
 
   return response;

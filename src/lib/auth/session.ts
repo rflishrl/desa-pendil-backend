@@ -6,9 +6,9 @@ import { toActor, type Actor } from "@/lib/auth/actor";
 import { createSessionClient } from "@/lib/supabase/server";
 
 /**
- * Mengembalikan admin yang sedang login, atau `null`. Memakai getUser(), yang
- * memeriksa token ke server Auth Supabase, bukan getSession() yang hanya membaca cookie.
- * `cache`: layout dan halaman dalam satu request berbagi satu pemeriksaan.
+ * Returns currently authenticated admin actor or `null`.
+ * Uses getUser() to validate the token against Supabase Auth, avoiding unverified getSession().
+ * Wrapped in React cache() to deduplicate calls within a single request.
  */
 export const getCurrentAdmin = cache(async (): Promise<Actor | null> => {
   const supabase = await createSessionClient();

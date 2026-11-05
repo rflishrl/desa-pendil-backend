@@ -12,7 +12,7 @@ export interface DashboardCounts {
   gallery: number;
 }
 
-/** Jumlah data untuk dashboard admin (tiga query kecil, berjalan bersamaan). */
+/** Aggregate counts for admin dashboard queried concurrently. */
 export async function getDashboardCounts(
   supabase: AppSupabaseClient,
   actor: Actor | null,

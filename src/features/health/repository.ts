@@ -4,7 +4,7 @@ import type { AppSupabaseClient } from "@/lib/supabase/server";
 
 const DB_TIMEOUT_MS = 3_000;
 
-/** Query paling ringan ke database (tanpa mengambil baris). Melempar jika gagal atau lewat 3 detik. */
+/** Lightweight database connectivity check with 3-second timeout. */
 export async function pingDatabase(supabase: AppSupabaseClient): Promise<void> {
   const { error } = await supabase
     .from("gallery_images")

@@ -9,8 +9,8 @@ import { assertAdmin } from "@/lib/auth/authorize";
 import { UPLOAD_PREFIX, uploadImage } from "@/lib/storage/blob";
 
 /**
- * Unggah satu foto. Tipe, ukuran, dan isi file (byte awal) diperiksa di lib/storage/blob.
- * Tidak ada repository: penyimpanannya Vercel Blob, bukan database.
+ * Uploads a single image file to Vercel Blob after validating headers and magic bytes.
+ * Persists to Blob storage without database tracking.
  */
 export async function uploadPhoto(
   actor: Actor | null,

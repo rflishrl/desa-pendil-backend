@@ -5,13 +5,13 @@ import { log } from "@/lib/log";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface RateLimitRule {
-  /** Nama aturan, jadi awalan kunci (mis. "login"). */
+  /** Rule identifier prefixed to rate limit keys (e.g. "login"). */
   name: string;
   limit: number;
   windowSeconds: number;
 }
 
-/** Alamat IP klien. Di Vercel, `x-real-ip` dan `x-forwarded-for` diisi oleh Vercel. */
+/** Extracts client IP, honoring proxy headers set by Vercel edge. */
 export function getClientIp(request: Request): string {
   return (
     request.headers.get("x-real-ip")?.trim() ||
@@ -21,9 +21,8 @@ export function getClientIp(request: Request): string {
 }
 
 /**
- * Menghitung satu percobaan untuk `rule` + `identifier`. Melempar RATE_LIMITED jika
- * batas terlampaui. Jika database penghitung tidak bisa dihubungi, request tetap
- * dilayani (fail open) dan kejadiannya dicatat; Supabase Auth punya batas sendiri.
+ * Records an attempt against `rule` + `identifier`, throwing RATE_LIMITED if exceeded.
+ * Fails open if the rate-limit store is unreachable, logging a warning.
  */
 export async function consumeRateLimit(
   rule: RateLimitRule,
@@ -40,20 +39,20 @@ export async function consumeRateLimit(
     .single();
 
   if (error || !data) {
-    log("warn", "rate limit tidak bisa diperiksa", { requestId, key, error });
+    log("warn", "rate limit check skipped", { requestId, key, error });
     return;
   }
   if (!data.allowed) {
     const minutes = Math.max(1, Math.ceil(data.retry_after_seconds / 60));
     throw new AppError(
       "RATE_LIMITED",
-      `Terlalu banyak percobaan. Coba lagi dalam ${minutes} menit.`,
+      `Too many requests. Please try again in ${minutes} minute(s).`,
       { retryAfterSeconds: data.retry_after_seconds },
     );
   }
 }
 
-/** Menghapus penghitung (mis. setelah login berhasil). */
+/** Resets attempt counter for `rule` + `identifier` upon successful authentication. */
 export async function resetRateLimit(
   rule: RateLimitRule,
   identifier: string,
@@ -61,5 +60,5 @@ export async function resetRateLimit(
   const { error } = await createAdminClient().rpc("rate_limit_reset", {
     p_key: `${rule.name}:${identifier}`,
   });
-  if (error) log("warn", "rate limit gagal direset", { error });
+  if (error) log("warn", "rate limit reset failed", { error });
 }

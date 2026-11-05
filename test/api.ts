@@ -2,7 +2,7 @@ import type { ApiResponse } from "@/lib/api/types";
 
 export const BASE_URL = "http://localhost:4000";
 
-/** Request dengan Origin yang sama dengan Host (lolos cek CSRF). */
+/** Creates mock Request with matching Origin and Host headers (passes CSRF verification). */
 export function sameOriginRequest(
   path: string,
   init: {

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const UPLOAD_FOLDERS = ["articles", "gallery"] as const;
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];
 
-/** Isi multipart/form-data untuk POST /api/upload. */
+/** Multipart form payload schema for POST /api/upload. */
 export const uploadFormSchema = z.object({
   folder: z.enum(UPLOAD_FOLDERS, { error: "Folder tujuan tidak valid." }),
   file: z.instanceof(File, { error: "File foto wajib dikirim." }),

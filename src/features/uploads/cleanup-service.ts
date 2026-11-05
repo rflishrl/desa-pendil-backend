@@ -8,13 +8,12 @@ import { log } from "@/lib/log";
 import { deleteOrphanImages } from "@/lib/storage/blob";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Foto yang lebih muda dari ini tidak disentuh (mungkin form-nya masih diisi). */
+/** Preserves recent uploads to prevent deleting files from active form sessions. */
 const MIN_ORPHAN_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Pembersihan foto yatim oleh Vercel Cron. Otorisasinya: header
- * `Authorization: Bearer <CRON_SECRET>` (dikirim otomatis oleh Vercel), dibandingkan
- * dalam waktu tetap. CRON_SECRET kosong = fitur mati (503).
+ * Cleans up orphaned uploads via Vercel Cron.
+ * Validates `Authorization: Bearer <CRON_SECRET>` with constant-time equality check.
  */
 export async function cleanupOrphanImages(
   authorization: string | null,

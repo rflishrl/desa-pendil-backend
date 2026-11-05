@@ -32,7 +32,7 @@ const first = (raw: RawSearchParams) =>
     ]),
   );
 
-/** Daftar: service dipanggil langsung di server, hasilnya dihidrasi ke TanStack Query. */
+/** List view: calls service directly on server and hydrates TanStack Query cache. */
 export async function GalleryListPage({
   searchParams,
 }: {
@@ -82,7 +82,7 @@ export function GalleryCreatePage() {
   );
 }
 
-/** Ubah: data di-prefetch supaya form langsung terisi; id tidak ada = 404. */
+/** Edit view: prefetches data to prefill form; returns 404 if record is missing. */
 export async function GalleryEditPage({
   params,
 }: {

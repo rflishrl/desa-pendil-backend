@@ -1,6 +1,6 @@
 /**
- * Error yang aman ditampilkan ke pemanggil API. Pesannya untuk pengguna; detail teknis
- * (mis. pesan mentah Supabase) disimpan di `cause` dan hanya masuk log server.
+ * Application errors with safe user-facing messages.
+ * Technical details (e.g. database errors) are stored in `cause` and logged server-side.
  */
 export type AppErrorCode =
   | "BAD_REQUEST"
@@ -31,7 +31,7 @@ export const STATUS_BY_CODE: Record<AppErrorCode, number> = {
 
 export class AppError extends Error {
   readonly code: AppErrorCode;
-  /** Detik tunggu untuk RATE_LIMITED (header Retry-After). */
+  /** Retry delay in seconds for RATE_LIMITED responses (used in Retry-After header). */
   readonly retryAfterSeconds?: number;
 
   constructor(

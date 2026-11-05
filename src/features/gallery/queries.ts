@@ -21,7 +21,7 @@ export const galleryKeys = {
 
 const STALE_TIME = 30_000;
 
-/** Dipakai bersama server (prefetch, queryFn diganti service) dan client. */
+/** Shared query options for server prefetching and client cache hydration. */
 export function galleryListOptions(params: GalleryListParams) {
   return queryOptions({
     queryKey: galleryKeys.list(params),

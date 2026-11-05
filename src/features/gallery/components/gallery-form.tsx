@@ -31,7 +31,7 @@ const Required = () => (
   </span>
 );
 
-/** Form tambah/ubah satu foto galeri. Skema Zod-nya sama dengan route. */
+/** Gallery create and edit form sharing validation schemas with API routes. */
 export function GalleryForm({ image }: { image?: GalleryDto }) {
   const save = useSaveGalleryImage(image?.id);
   const alertRef = useRef<HTMLDivElement>(null);

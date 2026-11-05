@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /**
- * Kolom pencarian berbasis form GET, jadi tetap berfungsi tanpa JavaScript.
- * Di HP kolom dan tombol tersusun ke bawah; di layar lebar sejajar satu baris.
+ * GET form search input, functioning with or without JavaScript.
+ * Stacks vertically on mobile viewports; flexes inline on larger viewports.
  */
 export function SearchForm({
   defaultValue,
@@ -15,7 +15,7 @@ export function SearchForm({
 }: {
   defaultValue: string;
   placeholder: string;
-  /** Alamat daftar tanpa pencarian, untuk tombol "Hapus pencarian". */
+  /** URL href resetting query parameters. */
   clearHref: string;
 }) {
   return (

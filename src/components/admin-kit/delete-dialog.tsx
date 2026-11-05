@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button";
 
 interface DeleteDialogProps {
   itemName: string;
-  /** Menghapus item; lempar error agar pesan tampil di dialog. */
+  /** Deletion callback; throwing an error surfaces the failure message in the dialog. */
   onConfirm: () => Promise<unknown>;
 }
 
-/** Tombol hapus + dialog konfirmasi (AlertDialog: fokus terkunci, Esc membatalkan). */
+/** Delete action trigger and confirmation modal dialog. */
 export function DeleteDialog({ itemName, onConfirm }: DeleteDialogProps) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);

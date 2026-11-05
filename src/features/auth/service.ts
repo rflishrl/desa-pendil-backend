@@ -7,8 +7,8 @@ import { AppError } from "@/lib/api/errors";
 import type { AppSupabaseClient } from "@/lib/supabase/server";
 
 /**
- * Login admin. Kredensial salah dan akun bukan admin sama-sama ditolak; akun bukan
- * admin langsung dikeluarkan lagi supaya tidak tertinggal sesi yang tidak berguna.
+ * Authenticates admin users. Invalid credentials and non-admin accounts are rejected;
+ * non-admin sessions are immediately signed out to avoid dangling tokens.
  */
 export async function login(
   supabase: AppSupabaseClient,
@@ -31,7 +31,7 @@ export async function login(
   return { email: user.email ?? email };
 }
 
-/** Logout. Selalu berhasil dari sisi pengguna; kegagalan di Supabase hanya dicatat. */
+/** Signs out user. Tolerates upstream Supabase errors gracefully. */
 export async function logout(
   supabase: AppSupabaseClient,
 ): Promise<{ loggedOut: true }> {

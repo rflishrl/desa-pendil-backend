@@ -7,17 +7,16 @@ import type { AppSupabaseClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 /**
- * Client dengan secret key. MELEWATI RLS, jadi hanya untuk operasi yang memang
- * tidak bisa berjalan sebagai user. Daftar pemakaian yang diizinkan:
+ * Service role client. Bypasses Row Level Security (RLS) and is strictly limited
+ * to internal administrative tasks:
  *
- * 1. Rate limit (src/lib/api/rate-limit.ts): tabel penghitung ada di skema `private`
- *    dan fungsinya hanya boleh dijalankan `service_role`, supaya orang luar tidak bisa
- *    mengisi atau mengosongkan penghitung orang lain.
- * 2. Cron pembersih foto (features/uploads): harus melihat foto produk yang tidak aktif,
- *    padahal cron tidak punya sesi admin.
- * 3. Script `scripts/create-admin.mjs`: membuat akun admin dan mengisi app_metadata.role.
+ * 1. Rate limiting (src/lib/api/rate-limit.ts): counters live in private schema
+ *    accessible only by service_role.
+ * 2. Upload cleanup background job (features/uploads): requires querying unreferenced assets
+ *    outside an active admin session.
+ * 3. Administrative tooling (`scripts/create-admin.mjs`): managing user accounts and metadata.
  *
- * Jangan pakai client ini untuk request dari pengguna.
+ * Do not use this client for regular user requests.
  */
 export function createAdminClient(): AppSupabaseClient {
   const env = getServerEnv();

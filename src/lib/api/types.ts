@@ -1,4 +1,4 @@
-/** Bentuk semua respons API. Dipakai bersama server (withApi) dan client (api/client.ts). */
+/** Standard API response envelope shared across server handlers and client callers. */
 export type ApiResponse<T> =
   { success: true; data: T } | { success: false; error: string };
 
@@ -9,7 +9,7 @@ export interface Pagination {
   totalPages: number;
 }
 
-/** Isi `data` untuk endpoint daftar. */
+/** Paginated list response payload. */
 export interface Paginated<T> {
   items: T[];
   pagination: Pagination;

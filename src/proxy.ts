@@ -3,15 +3,15 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 /**
- * Proxy (Next.js 16, pengganti middleware) hanya memperbarui sesi Supabase.
- * Pemeriksaan login dan peran tetap dilakukan di layout admin dan di withApi(),
- * karena proxy tidak boleh menjadi satu-satunya penjaga akses.
+ * Proxy (Next.js 16) refreshes the Supabase session.
+ * Authentication and role checks remain enforced in the admin layout and withApi(),
+ * ensuring the proxy is not the single point of access control.
  */
 export async function proxy(request: NextRequest) {
   return updateSession(request);
 }
 
 export const config = {
-  // Hanya halaman yang memakai sesi. Route Handler bisa menulis cookie sendiri.
+  // Only paths requiring session management; route handlers manage cookies independently.
   matcher: ["/admin/:path*", "/login"],
 };

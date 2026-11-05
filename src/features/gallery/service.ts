@@ -28,7 +28,7 @@ const REVALIDATE_TAGS = ["gallery"];
 type Viewer =
   { audience: "public" } | { audience: "admin"; actor: Actor | null };
 
-/** Publik: 50 foto per halaman. Admin: 12 per halaman. Galeri tidak punya status draf. */
+/** Public: 50 items/page. Admin: 12 items/page. Gallery items are always published. */
 export async function listGalleryFor(
   supabase: AppSupabaseClient,
   viewer: Viewer,
