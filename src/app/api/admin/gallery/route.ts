@@ -8,9 +8,8 @@ export const maxDuration = 10;
 /** Admin: all gallery photos (12 per page). */
 export const GET = withApi(
   { access: "admin" },
-  async ({ request, supabase, actor }) => ({
+  async ({ request, actor }) => ({
     data: await listGalleryFor(
-      supabase,
       { audience: "admin", actor },
       parseQuery(request, listQuerySchema(12)),
     ),
@@ -19,8 +18,8 @@ export const GET = withApi(
 
 export const POST = withApi(
   { access: "admin" },
-  async ({ request, supabase, actor }) => ({
-    data: await createGalleryImage(supabase, actor, await readJson(request)),
+  async ({ request, actor }) => ({
+    data: await createGalleryImage(actor, await readJson(request)),
     status: 201,
   }),
 );

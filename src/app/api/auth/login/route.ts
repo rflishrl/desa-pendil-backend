@@ -6,11 +6,11 @@ import { withApi } from "@/lib/api/with-api";
 
 export const maxDuration = 10;
 
-/** Login admin. Dibatasi 8 percobaan per 10 menit per IP; berhasil = penghitung direset. */
+/** Admin login. Rate limited to 8 attempts per 10 minutes per IP. */
 export const POST = withApi(
   { access: "session", rateLimit: RATE_LIMITS.login },
-  async ({ request, supabase }) => {
-    const result = await login(supabase, await readJson(request));
+  async ({ request }) => {
+    const result = await login(await readJson(request));
     await resetRateLimit(RATE_LIMITS.login, getClientIp(request));
     return { data: result };
   },

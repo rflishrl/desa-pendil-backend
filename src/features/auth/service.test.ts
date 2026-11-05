@@ -1,107 +1,107 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const signInWithPassword = vi.fn();
-const signOut = vi.fn();
+const findUserByEmail = vi.fn();
+const setSessionCookie = vi.fn();
+const clearSessionCookie = vi.fn();
 
 vi.mock("@/features/auth/repository", () => ({
-  signInWithPassword: (...args: unknown[]) => signInWithPassword(...args),
-  signOut: (...args: unknown[]) => signOut(...args),
+  findUserByEmail: (...args: unknown[]) => findUserByEmail(...args),
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  setSessionCookie: (...args: unknown[]) => setSessionCookie(...args),
+  clearSessionCookie: (...args: unknown[]) => clearSessionCookie(...args),
+}));
+
+import { hashPassword } from "@/lib/auth/password";
 const { login, logout } = await import("@/features/auth/service");
 
-const supabase = {} as never;
+const adminPassword = "secret-password";
 const admin = {
   id: "a1",
-  email: "admin@sinarberkah.com",
-  app_metadata: { role: "admin" },
+  email: "admin@desa-pendil.id",
+  password_hash: hashPassword(adminPassword),
+  role: "admin",
 };
+
 const user = {
   id: "u1",
-  email: "user@sinarberkah.com",
-  app_metadata: {},
-  user_metadata: { role: "admin" },
+  email: "user@desa-pendil.id",
+  password_hash: hashPassword(adminPassword),
+  role: "user",
 };
 
 beforeEach(() => {
-  signInWithPassword.mockReset();
-  signOut.mockReset().mockResolvedValue(null);
+  findUserByEmail.mockReset();
+  setSessionCookie.mockReset();
+  clearSessionCookie.mockReset();
 });
 
-describe("login: validasi", () => {
-  it("email tidak valid ditolak sebelum memanggil Supabase", async () => {
+describe("login: validation", () => {
+  it("rejects invalid email format", async () => {
     await expect(
-      login(supabase, { email: "bukan-email", password: "x" }),
+      login({ email: "not-an-email", password: "x" }),
     ).rejects.toMatchObject({
       name: "ZodError",
     });
-    expect(signInWithPassword).not.toHaveBeenCalled();
+    expect(findUserByEmail).not.toHaveBeenCalled();
   });
 
-  it("password kosong ditolak", async () => {
+  it("rejects empty password", async () => {
     await expect(
-      login(supabase, { email: "admin@sinarberkah.com", password: "" }),
+      login({ email: "admin@desa-pendil.id", password: "" }),
     ).rejects.toMatchObject({
       name: "ZodError",
     });
   });
 
-  it("email dirapikan (spasi dan huruf besar) sebelum dikirim", async () => {
-    signInWithPassword.mockResolvedValue({ user: admin, error: null });
-    await login(supabase, {
-      email: "  Admin@SinarBerkah.com ",
-      password: "rahasia",
+  it("normalizes email whitespace and casing", async () => {
+    findUserByEmail.mockResolvedValue(admin);
+    await login({
+      email: "  Admin@Desa-Pendil.ID ",
+      password: adminPassword,
     });
-    expect(signInWithPassword).toHaveBeenCalledWith(
-      supabase,
-      "admin@sinarberkah.com",
-      "rahasia",
-    );
+    expect(findUserByEmail).toHaveBeenCalledWith("admin@desa-pendil.id");
   });
 });
 
-describe("login: otorisasi", () => {
-  it("admin berhasil login", async () => {
-    signInWithPassword.mockResolvedValue({ user: admin, error: null });
+describe("login: authorization", () => {
+  it("succeeds with valid admin credentials and sets session cookie", async () => {
+    findUserByEmail.mockResolvedValue(admin);
     await expect(
-      login(supabase, { email: admin.email, password: "rahasia" }),
+      login({ email: admin.email, password: adminPassword }),
     ).resolves.toEqual({
       email: admin.email,
     });
-    expect(signOut).not.toHaveBeenCalled();
+    expect(setSessionCookie).toHaveBeenCalledWith(admin);
   });
 
-  it("kredensial salah = UNAUTHENTICATED dengan pesan umum", async () => {
-    signInWithPassword.mockResolvedValue({
-      user: null,
-      error: { code: "invalid_credentials" },
-    });
+  it("rejects invalid password with UNAUTHENTICATED error", async () => {
+    findUserByEmail.mockResolvedValue(admin);
     await expect(
-      login(supabase, { email: admin.email, password: "salah" }),
+      login({ email: admin.email, password: "wrong-password" }),
     ).rejects.toMatchObject({
       code: "UNAUTHENTICATED",
       message: "Email atau password salah.",
     });
+    expect(setSessionCookie).not.toHaveBeenCalled();
   });
 
-  it("user bukan admin (role di user_metadata tidak dihitung) = FORBIDDEN dan sesi dibuang", async () => {
-    signInWithPassword.mockResolvedValue({ user, error: null });
+  it("rejects non-admin role with FORBIDDEN error", async () => {
+    findUserByEmail.mockResolvedValue(user);
     await expect(
-      login(supabase, { email: user.email, password: "rahasia" }),
+      login({ email: user.email, password: adminPassword }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
+      message: "Akun ini tidak punya akses admin.",
     });
-    expect(signOut).toHaveBeenCalledOnce();
+    expect(setSessionCookie).not.toHaveBeenCalled();
   });
 });
 
 describe("logout", () => {
-  it("berhasil", async () => {
-    await expect(logout(supabase)).resolves.toEqual({ loggedOut: true });
-  });
-
-  it("gagal di Supabase = INTERNAL", async () => {
-    signOut.mockResolvedValue(new Error("network"));
-    await expect(logout(supabase)).rejects.toMatchObject({ code: "INTERNAL" });
+  it("clears session cookie", async () => {
+    await expect(logout()).resolves.toEqual({ loggedOut: true });
+    expect(clearSessionCookie).toHaveBeenCalled();
   });
 });

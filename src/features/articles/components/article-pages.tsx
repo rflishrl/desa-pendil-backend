@@ -21,7 +21,6 @@ import { AppError } from "@/lib/api/errors";
 import { getCurrentAdmin } from "@/lib/auth/session";
 import { getQueryClient } from "@/lib/query/query-client";
 import { listQuerySchema } from "@/lib/schemas/common";
-import { createSessionClient } from "@/lib/supabase/server";
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
@@ -42,15 +41,11 @@ export async function ArticleListPage({
   const query = listQuerySchema(10).parse(first(await searchParams));
   const params = { q: query.q ?? "", page: query.page };
 
-  const [supabase, actor] = await Promise.all([
-    createSessionClient(),
-    getCurrentAdmin(),
-  ]);
+  const actor = await getCurrentAdmin();
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
     ...articleListOptions(params),
-    queryFn: () =>
-      listArticlesFor(supabase, { audience: "admin", actor }, params),
+    queryFn: () => listArticlesFor({ audience: "admin", actor }, params),
   });
 
   return (
@@ -96,16 +91,13 @@ export async function ArticleEditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [supabase, actor] = await Promise.all([
-    createSessionClient(),
-    getCurrentAdmin(),
-  ]);
+  const actor = await getCurrentAdmin();
   const queryClient = getQueryClient();
 
   try {
     await queryClient.fetchQuery({
       ...articleDetailOptions(id),
-      queryFn: () => getArticle(supabase, { audience: "admin", actor }, id),
+      queryFn: () => getArticle({ audience: "admin", actor }, id),
     });
   } catch (error) {
     if (error instanceof AppError && error.code === "NOT_FOUND") notFound();

@@ -1,17 +1,23 @@
 import "server-only";
 
+import { getDb } from "@/lib/db/client";
 import type {
   GalleryCreateInput,
   GalleryDto,
   GalleryUpdateInput,
 } from "@/features/gallery/schemas";
-import { toAppError } from "@/lib/supabase/errors";
-import type { AppSupabaseClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
 
-type GalleryRow = Tables<"gallery_images">;
+interface RawGalleryRow {
+  id: string;
+  url: string;
+  alt: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
 
-function toDto(row: GalleryRow): GalleryDto {
+function toDto(row: RawGalleryRow): GalleryDto {
   return {
     id: row.id,
     url: row.url,
@@ -23,93 +29,102 @@ function toDto(row: GalleryRow): GalleryDto {
   };
 }
 
-/** Maps input to snake_case columns. Empty captions serialize as NULL. */
-function toColumns(input: GalleryUpdateInput) {
-  return {
-    ...(input.url !== undefined && { url: input.url }),
-    ...(input.alt !== undefined && { alt: input.alt }),
-    ...(input.caption !== undefined && { caption: input.caption || null }),
-    ...(input.sort_order !== undefined && { sort_order: input.sort_order }),
-  };
+export async function listGalleryImages({
+  limit,
+  offset,
+}: {
+  limit: number;
+  offset: number;
+}): Promise<{ items: GalleryDto[]; total: number }> {
+  const sql = getDb();
+  const [rows, countRows] = await Promise.all([
+    sql`
+      SELECT id, url, alt, caption, sort_order, created_at, updated_at
+      FROM gallery_images
+      ORDER BY sort_order ASC, created_at DESC, id ASC
+      LIMIT ${limit} OFFSET ${offset}
+    `,
+    sql`
+      SELECT COUNT(*)::int AS total
+      FROM gallery_images
+    `,
+  ]);
+
+  const items = (rows as unknown as RawGalleryRow[]).map(toDto);
+  const total = Number((countRows[0] as { total: number })?.total ?? 0);
+  return { items, total };
 }
 
-/** Orders ascending by display rank, falling back to newest first. */
-export async function listGalleryImages(
-  supabase: AppSupabaseClient,
-  { limit, offset }: { limit: number; offset: number },
-): Promise<{ items: GalleryDto[]; total: number }> {
-  const { data, error, count } = await supabase
-    .from("gallery_images")
-    .select("*", { count: "exact" })
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: true })
-    .range(offset, offset + limit - 1);
-  if (error) throw toAppError(error, "memuat galeri");
-  return { items: data.map(toDto), total: count ?? 0 };
+export async function countGalleryImages(): Promise<number> {
+  const sql = getDb();
+  const rows = await sql`SELECT COUNT(*)::int AS total FROM gallery_images`;
+  return Number((rows[0] as { total: number })?.total ?? 0);
 }
 
-export async function countGalleryImages(
-  supabase: AppSupabaseClient,
-): Promise<number> {
-  const { count, error } = await supabase
-    .from("gallery_images")
-    .select("id", { count: "exact", head: true });
-  if (error) throw toAppError(error, "menghitung galeri");
-  return count ?? 0;
-}
-
-export async function findGalleryImage(
-  supabase: AppSupabaseClient,
-  id: string,
-): Promise<GalleryDto | null> {
-  const { data, error } = await supabase
-    .from("gallery_images")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw toAppError(error, "memuat foto");
-  return data ? toDto(data) : null;
+export async function findGalleryImage(id: string): Promise<GalleryDto | null> {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, url, alt, caption, sort_order, created_at, updated_at
+    FROM gallery_images
+    WHERE id = ${id}::uuid
+    LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  return toDto(rows[0] as unknown as RawGalleryRow);
 }
 
 export async function insertGalleryImage(
-  supabase: AppSupabaseClient,
   input: GalleryCreateInput,
 ): Promise<GalleryDto> {
-  const { data, error } = await supabase
-    .from("gallery_images")
-    .insert({ ...toColumns(input), url: input.url, alt: input.alt })
-    .select("*")
-    .single();
-  if (error) throw toAppError(error, "menyimpan foto");
-  return toDto(data);
+  const sql = getDb();
+  const rows = await sql`
+    INSERT INTO gallery_images (url, alt, caption, sort_order)
+    VALUES (
+      ${input.url},
+      ${input.alt},
+      ${input.caption || null},
+      ${input.sort_order ?? 0}
+    )
+    RETURNING id, url, alt, caption, sort_order, created_at, updated_at
+  `;
+  return toDto(rows[0] as unknown as RawGalleryRow);
 }
 
 export async function updateGalleryImage(
-  supabase: AppSupabaseClient,
   id: string,
   input: GalleryUpdateInput,
-): Promise<GalleryDto | null> {
-  const { data, error } = await supabase
-    .from("gallery_images")
-    .update(toColumns(input))
-    .eq("id", id)
-    .select("*")
-    .maybeSingle();
-  if (error) throw toAppError(error, "menyimpan perubahan");
-  return data ? toDto(data) : null;
+): Promise<{ item: GalleryDto; previousUrl: string } | null> {
+  const sql = getDb();
+
+  const existing = await sql`SELECT url FROM gallery_images WHERE id = ${id}::uuid LIMIT 1`;
+  if (existing.length === 0) return null;
+  const previousUrl = (existing[0] as { url: string }).url;
+
+  const rows = await sql`
+    UPDATE gallery_images
+    SET
+      url = COALESCE(${input.url ?? null}, url),
+      alt = COALESCE(${input.alt ?? null}, alt),
+      caption = CASE WHEN ${input.caption !== undefined} THEN ${input.caption || null} ELSE caption END,
+      sort_order = COALESCE(${input.sort_order ?? null}, sort_order),
+      updated_at = NOW()
+    WHERE id = ${id}::uuid
+    RETURNING id, url, alt, caption, sort_order, created_at, updated_at
+  `;
+
+  if (rows.length === 0) return null;
+  return { item: toDto(rows[0] as unknown as RawGalleryRow), previousUrl };
 }
 
 export async function deleteGalleryImage(
-  supabase: AppSupabaseClient,
   id: string,
 ): Promise<GalleryDto | null> {
-  const { data, error } = await supabase
-    .from("gallery_images")
-    .delete()
-    .eq("id", id)
-    .select("*")
-    .maybeSingle();
-  if (error) throw toAppError(error, "menghapus foto");
-  return data ? toDto(data) : null;
+  const sql = getDb();
+  const rows = await sql`
+    DELETE FROM gallery_images
+    WHERE id = ${id}::uuid
+    RETURNING id, url, alt, caption, sort_order, created_at, updated_at
+  `;
+  if (rows.length === 0) return null;
+  return toDto(rows[0] as unknown as RawGalleryRow);
 }

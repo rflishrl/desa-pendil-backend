@@ -1,45 +1,30 @@
 import "server-only";
 
-import { signInWithPassword, signOut } from "@/features/auth/repository";
+import { findUserByEmail } from "@/features/auth/repository";
 import { loginSchema, type LoginResult } from "@/features/auth/schemas";
-import { toActor } from "@/lib/auth/actor";
+import { verifyPassword } from "@/lib/auth/password";
+import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
 import { AppError } from "@/lib/api/errors";
-import type { AppSupabaseClient } from "@/lib/supabase/server";
 
-/**
- * Authenticates admin users. Invalid credentials and non-admin accounts are rejected;
- * non-admin sessions are immediately signed out to avoid dangling tokens.
- */
-export async function login(
-  supabase: AppSupabaseClient,
-  rawInput: unknown,
-): Promise<LoginResult> {
+/** Authenticates admin users against Neon admin_users table. */
+export async function login(rawInput: unknown): Promise<LoginResult> {
   const { email, password } = loginSchema.parse(rawInput);
 
-  const { user, error } = await signInWithPassword(supabase, email, password);
-  if (error || !user) {
-    throw new AppError("UNAUTHENTICATED", "Email atau password salah.", {
-      cause: error,
-    });
+  const user = await findUserByEmail(email);
+  if (!user || !verifyPassword(password, user.password_hash)) {
+    throw new AppError("UNAUTHENTICATED", "Email atau password salah.");
   }
 
-  if (toActor(user).role !== "admin") {
-    await signOut(supabase);
+  if (user.role !== "admin") {
     throw new AppError("FORBIDDEN", "Akun ini tidak punya akses admin.");
   }
 
-  return { email: user.email ?? email };
+  await setSessionCookie(user);
+  return { email: user.email };
 }
 
-/** Signs out user. Tolerates upstream Supabase errors gracefully. */
-export async function logout(
-  supabase: AppSupabaseClient,
-): Promise<{ loggedOut: true }> {
-  const error = await signOut(supabase);
-  if (error) {
-    throw new AppError("INTERNAL", "Gagal keluar. Coba lagi.", {
-      cause: error,
-    });
-  }
+/** Signs out user by deleting the session cookie. */
+export async function logout(): Promise<{ loggedOut: true }> {
+  await clearSessionCookie();
   return { loggedOut: true };
 }

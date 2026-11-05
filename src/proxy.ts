@@ -1,17 +1,34 @@
-import type { NextRequest } from "next/server";
-
-import { updateSession } from "@/lib/supabase/proxy";
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
 
 /**
- * Proxy (Next.js 16) refreshes the Supabase session.
- * Authentication and role checks remain enforced in the admin layout and withApi(),
- * ensuring the proxy is not the single point of access control.
+ * Next.js 16 Proxy for admin and login routes.
+ * Redirects authenticated admins away from /login,
+ * and unauthenticated visitors to /login when attempting to access /admin.
  */
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const actor = token ? verifySessionToken(token) : null;
+  const isAdmin = actor?.role === "admin";
+  const { pathname } = request.nextUrl;
+
+  if (pathname === "/login") {
+    if (isAdmin) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/admin")) {
+    if (!isAdmin) {
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  // Only paths requiring session management; route handlers manage cookies independently.
   matcher: ["/admin/:path*", "/login"],
 };

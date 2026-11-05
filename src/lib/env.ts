@@ -10,30 +10,18 @@ export class ConfigError extends Error {
 
 /*
  * Every value is read on the server only, so none of them use the public Next.js
- * prefix. The browser never talks to Supabase.
+ * prefix. The browser never accesses database credentials.
  */
 const serverEnvSchema = z.object({
-  SUPABASE_URL: z.url({
-    protocol: /^https?$/,
-    error: "must be the Supabase project URL (https://xxxx.supabase.co)",
-  }),
-  SUPABASE_PUBLISHABLE_KEY: z
+  DATABASE_URI: z
     .string()
     .trim()
-    .startsWith(
-      "sb_publishable_",
-      "must be a publishable key (sb_publishable_...)",
-    ),
-  // Bypasses RLS. Only used in src/lib/supabase/admin.ts.
-  SUPABASE_SECRET_KEY: z
-    .string()
-    .trim()
-    .startsWith("sb_secret_", "must be a secret key (sb_secret_...)"),
+    .min(1, "must be the Neon PostgreSQL connection string (postgresql://...)"),
+  SESSION_SECRET: z.string().trim().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   FRONTEND_URL: z.string().optional(),
   REVALIDATE_SECRET: z.string().optional(),
-  // Sent by Vercel Cron in the Authorization header. Empty = the cron endpoint is off.
   CRON_SECRET: z.string().optional(),
 });
 
@@ -45,7 +33,12 @@ let cachedServerEnv: ServerEnv | undefined;
 export function getServerEnv(): ServerEnv {
   if (cachedServerEnv) return cachedServerEnv;
 
-  const result = serverEnvSchema.safeParse(process.env);
+  const envSource = {
+    ...process.env,
+    DATABASE_URI: process.env.DATABASE_URI || process.env.DATABASE_URL,
+  };
+
+  const result = serverEnvSchema.safeParse(envSource);
   if (!result.success) {
     const problems = result.error.issues
       .map((issue) => `${issue.path.join(".")} ${issue.message}`)

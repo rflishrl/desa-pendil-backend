@@ -2,7 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
-import { toActor, type Actor } from "@/lib/auth/actor";
+import type { Actor } from "@/lib/auth/actor";
+import { getCurrentAdmin } from "@/lib/auth/session";
 import { AppError } from "@/lib/api/errors";
 import {
   consumeRateLimit,
@@ -13,24 +14,12 @@ import { assertSameOrigin, isSafeMethod } from "@/lib/api/request";
 import type { ApiResponse } from "@/lib/api/types";
 import { ConfigError, getAllowedOrigins } from "@/lib/env";
 import { log } from "@/lib/log";
-import {
-  createPublicClient,
-  createSessionClient,
-  type AppSupabaseClient,
-} from "@/lib/supabase/server";
 
 type Access = "public" | "session" | "admin";
 
 interface WithApiOptions<A extends Access> {
-  /**
-   * - `public`: sessionless client using anonymous Supabase role for public RLS policies.
-   * - `session`: client reading session cookies without authentication requirements.
-   * - `admin`: requires authenticated session with admin role.
-   */
   access: A;
-  /** Rate limit configuration per client IP. Required for public mutation endpoints. */
   rateLimit?: RateLimitRule;
-  /** Verifies Origin header on state-changing methods. Defaults to true. */
   sameOrigin?: boolean;
 }
 
@@ -38,7 +27,6 @@ interface BaseContext<P> {
   request: Request;
   params: P;
   requestId: string;
-  supabase: AppSupabaseClient;
 }
 
 export type ApiContext<A extends Access, P> = BaseContext<P> &
@@ -53,10 +41,6 @@ interface RouteContext<P> {
   params: Promise<P>;
 }
 
-/*
- * API responses are marked no-store to prevent edge CDN caching.
- * The frontend maintains its own tagged cache evicted on admin mutations.
- */
 const NO_STORE = "private, no-store";
 
 function json<T>(body: ApiResponse<T>, status: number): Response {
@@ -149,28 +133,18 @@ export function withApi<
       let resolved: BaseContext<P> & { actor: Actor | null };
 
       if (options.access === "admin") {
-        const supabase = await createSessionClient();
-        const { data, error } = await supabase.auth.getUser();
-        if (error || !data.user) {
+        const actor = await getCurrentAdmin();
+        if (!actor) {
           throw new AppError(
             "UNAUTHENTICATED",
             "Anda harus login sebagai admin.",
           );
         }
-        const actor = toActor(data.user);
-        if (actor.role !== "admin") {
-          throw new AppError("FORBIDDEN", "Akun ini bukan admin.");
-        }
-        resolved = { request, params, requestId, supabase, actor };
+        resolved = { request, params, requestId, actor };
       } else {
-        const supabase =
-          options.access === "session"
-            ? await createSessionClient()
-            : createPublicClient();
-        resolved = { request, params, requestId, supabase, actor: null };
+        resolved = { request, params, requestId, actor: null };
       }
 
-      // Type assertion safe: actor is populated if and only if access === "admin"
       const result = await handler(resolved as unknown as ApiContext<A, P>);
       response = json(
         { success: true, data: result.data },

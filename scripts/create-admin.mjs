@@ -1,106 +1,42 @@
-// Membuat (atau memperbarui) akun admin di Supabase Auth dengan app_metadata.role = "admin".
-// Password diketik di terminal dan tidak ditampilkan, jadi tidak tersimpan di riwayat shell.
-//
-// Butuh di .env.local: SUPABASE_URL, SUPABASE_SECRET_KEY.
-// Pemakaian: npm run create-admin -- admin@desapendil.id
-import { createClient } from "@supabase/supabase-js";
-import { createInterface } from "node:readline";
+import { neon } from "@neondatabase/serverless";
+import crypto from "node:crypto";
+import readline from "node:readline/promises";
 
-const { SUPABASE_URL, SUPABASE_SECRET_KEY } = process.env;
-const email = process.argv[2]?.trim().toLowerCase();
-
-if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-  console.error("Isi SUPABASE_URL dan SUPABASE_SECRET_KEY di .env.local.");
-  process.exit(1);
-}
-if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-  console.error("Pemakaian: npm run create-admin -- admin@domain.com");
+const email = process.argv[2];
+if (!email || !email.includes("@")) {
+  console.error("Usage: npm run create-admin -- email@example.com");
   process.exit(1);
 }
 
-/** Membaca satu baris dari terminal tanpa menampilkan isinya. */
-function askHidden(question) {
-  return new Promise((resolve) => {
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: true,
-    });
-    let muted = false;
-    rl._writeToOutput = (text) => {
-      if (!muted) rl.output.write(text);
-    };
-    rl.question(question, (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer);
-    });
-    muted = true;
-  });
-}
-
-const password = await askHidden(
-  `Password untuk ${email} (minimal 8 karakter): `,
-);
-if (password.length < 8) {
-  console.error("Password minimal 8 karakter.");
-  process.exit(1);
-}
-const again = await askHidden("Ulangi password: ");
-if (again !== password) {
-  console.error("Password tidak sama.");
+const uri = process.env.DATABASE_URI || process.env.DATABASE_URL;
+if (!uri) {
+  console.error("DATABASE_URI is required. Please set it in .env.local.");
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const password = await rl.question("Password: ");
+rl.close();
 
-const { data: created, error } = await supabase.auth.admin.createUser({
-  email,
-  password,
-  email_confirm: true,
-  app_metadata: { role: "admin" },
-});
-
-if (!error) {
-  console.log(`Admin dibuat: ${created.user.email}`);
-  process.exit(0);
-}
-
-// Email sudah terdaftar: perbarui password dan jadikan admin.
-if (error.code !== "email_exists") {
-  console.error("Gagal membuat admin:", error.message);
+if (!password || password.length < 8) {
+  console.error("Password must be at least 8 characters.");
   process.exit(1);
 }
 
-let existing;
-for (let page = 1; !existing; page += 1) {
-  const { data, error: listError } = await supabase.auth.admin.listUsers({
-    page,
-    perPage: 200,
-  });
-  if (listError) {
-    console.error("Gagal mencari user:", listError.message);
-    process.exit(1);
-  }
-  existing = data.users.find((user) => user.email?.toLowerCase() === email);
-  if (data.users.length < 200) break;
-}
-if (!existing) {
-  console.error("Email terdaftar tapi user tidak ditemukan.");
-  process.exit(1);
-}
+const salt = crypto.randomBytes(16).toString("hex");
+const derivedKey = crypto.scryptSync(password, salt, 64);
+const passwordHash = `${salt}:${derivedKey.toString("hex")}`;
 
-const { error: updateError } = await supabase.auth.admin.updateUserById(
-  existing.id,
-  {
-    password,
-    app_metadata: { ...existing.app_metadata, role: "admin" },
-  },
-);
-if (updateError) {
-  console.error("Gagal memperbarui admin:", updateError.message);
+const sql = neon(uri);
+try {
+  await sql`
+    INSERT INTO admin_users (email, password_hash, role)
+    VALUES (${email.toLowerCase().trim()}, ${passwordHash}, 'admin')
+    ON CONFLICT (email) DO UPDATE
+    SET password_hash = ${passwordHash}, role = 'admin', updated_at = NOW()
+  `;
+  console.log(`Admin user registered successfully: ${email}`);
+} catch (error) {
+  console.error("Failed to create admin:", error);
   process.exit(1);
 }
-console.log(`Admin diperbarui: ${email}`);

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { AppError } from "@/lib/api/errors";
+import { getDb } from "@/lib/db/client";
 import { log } from "@/lib/log";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface RateLimitRule {
   /** Rule identifier prefixed to rate limit keys (e.g. "login"). */
@@ -30,25 +30,36 @@ export async function consumeRateLimit(
   requestId?: string,
 ): Promise<void> {
   const key = `${rule.name}:${identifier}`;
-  const { data, error } = await createAdminClient()
-    .rpc("rate_limit_hit", {
-      p_key: key,
-      p_limit: rule.limit,
-      p_window_seconds: rule.windowSeconds,
-    })
-    .single();
+  try {
+    const sql = getDb();
+    const rows = await sql`
+      INSERT INTO rate_limits (key, count, reset_at)
+      VALUES (${key}, 1, NOW() + (${rule.windowSeconds} || ' seconds')::interval)
+      ON CONFLICT (key) DO UPDATE
+      SET
+        count = CASE
+          WHEN rate_limits.reset_at <= NOW() THEN 1
+          ELSE rate_limits.count + 1
+        END,
+        reset_at = CASE
+          WHEN rate_limits.reset_at <= NOW() THEN NOW() + (${rule.windowSeconds} || ' seconds')::interval
+          ELSE rate_limits.reset_at
+        END
+      RETURNING count, GREATEST(1, EXTRACT(EPOCH FROM (reset_at - NOW()))::int) AS retry_after_seconds
+    `;
 
-  if (error || !data) {
+    const row = rows[0] as { count: number; retry_after_seconds: number } | undefined;
+    if (row && row.count > rule.limit) {
+      const minutes = Math.max(1, Math.ceil(row.retry_after_seconds / 60));
+      throw new AppError(
+        "RATE_LIMITED",
+        `Too many requests. Please try again in ${minutes} minute(s).`,
+        { retryAfterSeconds: row.retry_after_seconds },
+      );
+    }
+  } catch (error) {
+    if (error instanceof AppError) throw error;
     log("warn", "rate limit check skipped", { requestId, key, error });
-    return;
-  }
-  if (!data.allowed) {
-    const minutes = Math.max(1, Math.ceil(data.retry_after_seconds / 60));
-    throw new AppError(
-      "RATE_LIMITED",
-      `Too many requests. Please try again in ${minutes} minute(s).`,
-      { retryAfterSeconds: data.retry_after_seconds },
-    );
   }
 }
 
@@ -57,8 +68,10 @@ export async function resetRateLimit(
   rule: RateLimitRule,
   identifier: string,
 ): Promise<void> {
-  const { error } = await createAdminClient().rpc("rate_limit_reset", {
-    p_key: `${rule.name}:${identifier}`,
-  });
-  if (error) log("warn", "rate limit reset failed", { error });
+  try {
+    const sql = getDb();
+    await sql`DELETE FROM rate_limits WHERE key = ${`${rule.name}:${identifier}`}`;
+  } catch (error) {
+    log("warn", "rate limit reset failed", { error });
+  }
 }

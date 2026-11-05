@@ -2,7 +2,6 @@ import "server-only";
 
 import { pingDatabase } from "@/features/health/repository";
 import { AppError } from "@/lib/api/errors";
-import type { AppSupabaseClient } from "@/lib/supabase/server";
 
 export interface HealthStatus {
   status: "ok";
@@ -10,11 +9,9 @@ export interface HealthStatus {
 }
 
 /** Health check verifying application server and database connectivity. */
-export async function checkHealth(
-  supabase: AppSupabaseClient,
-): Promise<HealthStatus> {
+export async function checkHealth(): Promise<HealthStatus> {
   try {
-    await pingDatabase(supabase);
+    await pingDatabase();
   } catch (cause) {
     throw new AppError("UNAVAILABLE", "Database tidak dapat dijangkau.", {
       cause,

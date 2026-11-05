@@ -1,7 +1,7 @@
 import {
-  deleteArticleById,
+  deleteArticle,
   getArticle,
-  updateArticleById,
+  updateArticle,
 } from "@/features/articles/service";
 import { readJson } from "@/lib/api/request";
 import { withApi } from "@/lib/api/with-api";
@@ -12,16 +12,15 @@ type Params = { id: string };
 
 export const GET = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ params, supabase, actor }) => ({
-    data: await getArticle(supabase, { audience: "admin", actor }, params.id),
+  async ({ params, actor }) => ({
+    data: await getArticle({ audience: "admin", actor }, params.id),
   }),
 );
 
 export const PATCH = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ request, params, supabase, actor }) => ({
-    data: await updateArticleById(
-      supabase,
+  async ({ request, params, actor }) => ({
+    data: await updateArticle(
       actor,
       params.id,
       await readJson(request),
@@ -31,7 +30,7 @@ export const PATCH = withApi<"admin", Params>(
 
 export const DELETE = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ params, supabase, actor }) => ({
-    data: await deleteArticleById(supabase, actor, params.id),
+  async ({ params, actor }) => ({
+    data: await deleteArticle(actor, params.id),
   }),
 );

@@ -1,28 +1,39 @@
 import "server-only";
 
+import { getDb } from "@/lib/db/client";
 import type {
   ArticleCreateInput,
   ArticleDto,
   ArticleUpdateInput,
 } from "@/features/articles/schemas";
 import { isUuid } from "@/lib/ids";
-import { toAppError } from "@/lib/supabase/errors";
-import type { AppSupabaseClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
 
-type ArticleRow = Tables<"articles">;
+interface RawArticleRow {
+  id: string;
+  slug: string;
+  type: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  thumbnail_url: string | null;
+  author: string;
+  status: string;
+  published_at: string | Date | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
 
-function toDto(row: ArticleRow): ArticleDto {
+function toDto(row: RawArticleRow): ArticleDto {
   return {
     id: row.id,
     slug: row.slug,
-    type: row.type,
+    type: row.type as "berita" | "artikel" | "postingan",
     title: row.title,
     excerpt: row.excerpt,
     content: row.content,
     thumbnail: row.thumbnail_url,
     author: row.author,
-    status: row.status,
+    status: row.status as "draft" | "published",
     publishedAt: row.published_at
       ? new Date(row.published_at).toISOString()
       : null,
@@ -31,124 +42,144 @@ function toDto(row: ArticleRow): ArticleDto {
   };
 }
 
-/** Maps input to snake_case columns. Empty strings serialize as NULL; omitted fields are excluded. */
-function toColumns(input: ArticleUpdateInput) {
-  return {
-    ...(input.title !== undefined && { title: input.title }),
-    ...(input.type !== undefined && { type: input.type }),
-    ...(input.excerpt !== undefined && { excerpt: input.excerpt || null }),
-    ...(input.content !== undefined && { content: input.content }),
-    ...(input.thumbnail_url !== undefined && {
-      thumbnail_url: input.thumbnail_url || null,
-    }),
-    ...(input.author !== undefined && { author: input.author }),
-    ...(input.status !== undefined && { status: input.status }),
-  };
-}
-
 export interface ListParams {
   q?: string;
   limit: number;
   offset: number;
-  /** When true, queries published articles only; RLS enforces equivalent public access. */
   publicOnly: boolean;
 }
 
-export async function listArticles(
-  supabase: AppSupabaseClient,
-  { q, limit, offset, publicOnly }: ListParams,
-): Promise<{ items: ArticleDto[]; total: number }> {
-  const type = publicOnly ? ("berita" as const) : undefined;
-  const status = publicOnly ? ("published" as const) : undefined;
+export async function listArticles({
+  q,
+  limit,
+  offset,
+  publicOnly,
+}: ListParams): Promise<{ items: ArticleDto[]; total: number }> {
+  const sql = getDb();
+  const searchPattern = q ? `%${q.trim()}%` : null;
 
-  const [rows, count] = await Promise.all([
-    supabase.rpc("list_articles", {
-      p_type: type,
-      p_status: status,
-      p_q: q,
-      p_limit: limit,
-      p_offset: offset,
-    }),
-    supabase.rpc("count_articles", { p_type: type, p_status: status, p_q: q }),
+  const [rows, countRows] = await Promise.all([
+    sql`
+      SELECT id, slug, type, title, excerpt, content, thumbnail_url, author, status, published_at, created_at, updated_at
+      FROM articles
+      WHERE (${publicOnly} = false OR (type = 'berita' AND status = 'published'))
+        AND (${searchPattern}::text IS NULL OR title ILIKE ${searchPattern})
+      ORDER BY COALESCE(published_at, created_at) DESC, id ASC
+      LIMIT ${limit} OFFSET ${offset}
+    `,
+    sql`
+      SELECT COUNT(*)::int AS total
+      FROM articles
+      WHERE (${publicOnly} = false OR (type = 'berita' AND status = 'published'))
+        AND (${searchPattern}::text IS NULL OR title ILIKE ${searchPattern})
+    `,
   ]);
-  if (rows.error) throw toAppError(rows.error, "memuat konten");
-  if (count.error) throw toAppError(count.error, "menghitung konten");
-  return { items: rows.data.map(toDto), total: count.data };
+
+  const items = (rows as unknown as RawArticleRow[]).map(toDto);
+  const total = Number((countRows[0] as { total: number })?.total ?? 0);
+  return { items, total };
 }
 
 export async function countArticles(
-  supabase: AppSupabaseClient,
   status?: "draft" | "published",
 ): Promise<number> {
-  const { data, error } = await supabase.rpc("count_articles", {
-    p_status: status,
-  });
-  if (error) throw toAppError(error, "menghitung konten");
-  return data;
+  const sql = getDb();
+  const rows = await sql`
+    SELECT COUNT(*)::int AS total
+    FROM articles
+    WHERE (${status ?? null}::text IS NULL OR status = ${status})
+  `;
+  return Number((rows[0] as { total: number })?.total ?? 0);
 }
 
-/** Mencari lewat id (UUID) atau slug. */
 export async function findArticle(
-  supabase: AppSupabaseClient,
   idOrSlug: string,
   { publicOnly }: { publicOnly: boolean },
 ): Promise<ArticleDto | null> {
-  let query = supabase.from("articles").select("*");
-  query = isUuid(idOrSlug)
-    ? query.eq("id", idOrSlug)
-    : query.eq("slug", idOrSlug);
-  if (publicOnly) query = query.eq("type", "berita").eq("status", "published");
+  const sql = getDb();
+  const isId = isUuid(idOrSlug);
 
-  const { data, error } = await query.maybeSingle();
-  if (error) throw toAppError(error, "memuat konten");
-  return data ? toDto(data) : null;
+  const rows = await sql`
+    SELECT id, slug, type, title, excerpt, content, thumbnail_url, author, status, published_at, created_at, updated_at
+    FROM articles
+    WHERE (${isId ? idOrSlug : null}::uuid IS NOT NULL AND id = ${isId ? idOrSlug : null}::uuid)
+       OR (slug = ${idOrSlug})
+    LIMIT 1
+  `;
+
+  if (rows.length === 0) return null;
+  const item = toDto(rows[0] as unknown as RawArticleRow);
+  if (publicOnly && (item.type !== "berita" || item.status !== "published")) {
+    return null;
+  }
+  return item;
 }
 
 export async function insertArticle(
-  supabase: AppSupabaseClient,
   input: ArticleCreateInput,
   slug: string,
 ): Promise<ArticleDto> {
-  const { data, error } = await supabase
-    .from("articles")
-    .insert({
-      ...toColumns(input),
-      slug,
-      title: input.title,
-      content: input.content,
-    })
-    .select("*")
-    .single();
-  if (error) throw toAppError(error, "menyimpan konten");
-  return toDto(data);
+  const sql = getDb();
+  const rows = await sql`
+    INSERT INTO articles (
+      slug, type, title, excerpt, content, thumbnail_url, author, status, published_at
+    ) VALUES (
+      ${slug},
+      ${input.type ?? "berita"},
+      ${input.title},
+      ${input.excerpt || null},
+      ${input.content},
+      ${input.thumbnail_url || null},
+      ${input.author ?? "Admin"},
+      ${input.status ?? "draft"},
+      ${input.status === "published" ? new Date() : null}
+    )
+    RETURNING id, slug, type, title, excerpt, content, thumbnail_url, author, status, published_at, created_at, updated_at
+  `;
+  return toDto(rows[0] as unknown as RawArticleRow);
 }
 
-/** Updates row with row-level database lock (RPC update_article); returns null if not found. */
 export async function updateArticle(
-  supabase: AppSupabaseClient,
   id: string,
   input: ArticleUpdateInput,
 ): Promise<{ item: ArticleDto; previousThumbnail: string | null } | null> {
-  const { data, error } = await supabase
-    .rpc("update_article", { p_id: id, p_patch: toColumns(input) })
-    .maybeSingle();
-  if (error) throw toAppError(error, "menyimpan perubahan");
-  if (!data) return null;
+  const sql = getDb();
 
-  const { previous_thumbnail_url: previousThumbnail, ...row } = data;
-  return { item: toDto(row), previousThumbnail };
+  const existing = await sql`SELECT thumbnail_url FROM articles WHERE id = ${id}::uuid LIMIT 1`;
+  if (existing.length === 0) return null;
+  const previousThumbnail = (existing[0] as { thumbnail_url: string | null }).thumbnail_url;
+
+  const rows = await sql`
+    UPDATE articles
+    SET
+      type = COALESCE(${input.type ?? null}, type),
+      title = COALESCE(${input.title ?? null}, title),
+      excerpt = CASE WHEN ${input.excerpt !== undefined} THEN ${input.excerpt || null} ELSE excerpt END,
+      content = COALESCE(${input.content ?? null}, content),
+      thumbnail_url = CASE WHEN ${input.thumbnail_url !== undefined} THEN ${input.thumbnail_url || null} ELSE thumbnail_url END,
+      author = COALESCE(${input.author ?? null}, author),
+      status = COALESCE(${input.status ?? null}, status),
+      published_at = CASE
+        WHEN ${input.status === "published"} THEN COALESCE(published_at, NOW())
+        WHEN ${input.status === "draft"} THEN NULL
+        ELSE published_at
+      END,
+      updated_at = NOW()
+    WHERE id = ${id}::uuid
+    RETURNING id, slug, type, title, excerpt, content, thumbnail_url, author, status, published_at, created_at, updated_at
+  `;
+
+  if (rows.length === 0) return null;
+  return { item: toDto(rows[0] as unknown as RawArticleRow), previousThumbnail };
 }
 
-export async function deleteArticle(
-  supabase: AppSupabaseClient,
-  id: string,
-): Promise<ArticleDto | null> {
-  const { data, error } = await supabase
-    .from("articles")
-    .delete()
-    .eq("id", id)
-    .select("*")
-    .maybeSingle();
-  if (error) throw toAppError(error, "menghapus konten");
-  return data ? toDto(data) : null;
+export async function deleteArticle(id: string): Promise<ArticleDto | null> {
+  const sql = getDb();
+  const rows = await sql`
+    DELETE FROM articles
+    WHERE id = ${id}::uuid
+    RETURNING id, slug, type, title, excerpt, content, thumbnail_url, author, status, published_at, created_at, updated_at
+  `;
+  if (rows.length === 0) return null;
+  return toDto(rows[0] as unknown as RawArticleRow);
 }

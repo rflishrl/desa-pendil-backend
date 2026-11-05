@@ -12,16 +12,15 @@ type Params = { id: string };
 
 export const GET = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ params, supabase, actor }) => ({
-    data: await getGalleryImage(supabase, actor, params.id),
+  async ({ params, actor }) => ({
+    data: await getGalleryImage(actor, params.id),
   }),
 );
 
 export const PATCH = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ request, params, supabase, actor }) => ({
+  async ({ request, params, actor }) => ({
     data: await updateGalleryImageById(
-      supabase,
       actor,
       params.id,
       await readJson(request),
@@ -31,7 +30,7 @@ export const PATCH = withApi<"admin", Params>(
 
 export const DELETE = withApi<"admin", Params>(
   { access: "admin" },
-  async ({ params, supabase, actor }) => ({
-    data: await deleteGalleryImageById(supabase, actor, params.id),
+  async ({ params, actor }) => ({
+    data: await deleteGalleryImageById(actor, params.id),
   }),
 );

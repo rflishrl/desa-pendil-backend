@@ -6,7 +6,6 @@ import { safeEqual } from "@/lib/crypto";
 import { getServerEnv } from "@/lib/env";
 import { log } from "@/lib/log";
 import { deleteOrphanImages } from "@/lib/storage/blob";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Preserves recent uploads to prevent deleting files from active form sessions. */
 const MIN_ORPHAN_AGE_MS = 24 * 60 * 60 * 1000;
@@ -24,7 +23,7 @@ export async function cleanupOrphanImages(
     throw new AppError("UNAUTHENTICATED", "Tidak diizinkan.");
   }
 
-  const referenced = await listReferencedImageUrls(createAdminClient());
+  const referenced = await listReferencedImageUrls();
   const result = await deleteOrphanImages(
     referenced,
     new Date(Date.now() - MIN_ORPHAN_AGE_MS),

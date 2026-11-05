@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/table";
 import { getDashboardCounts } from "@/features/dashboard/service";
 import { getCurrentAdmin } from "@/lib/auth/session";
-import { createSessionClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -147,11 +146,8 @@ function StatCard({
 }
 
 export default async function DashboardPage() {
-  const [supabase, actor] = await Promise.all([
-    createSessionClient(),
-    getCurrentAdmin(),
-  ]);
-  const counts = await getDashboardCounts(supabase, actor);
+  const actor = await getCurrentAdmin();
+  const counts = await getDashboardCounts(actor);
   const blobReady = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
   return (

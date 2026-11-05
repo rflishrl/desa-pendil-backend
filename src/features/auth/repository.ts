@@ -1,24 +1,28 @@
 import "server-only";
 
-import type { User } from "@supabase/supabase-js";
+import { getDb } from "@/lib/db/client";
 
-import type { AppSupabaseClient } from "@/lib/supabase/server";
-
-/** Authenticates with email and password; returns User or null if invalid. */
-export async function signInWithPassword(
-  supabase: AppSupabaseClient,
-  email: string,
-  password: string,
-): Promise<{ user: User | null; error: unknown }> {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { user: data.user, error };
+export interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  role: "admin" | "user";
 }
 
-/** Terminates session in Supabase and clears session cookies. */
-export async function signOut(supabase: AppSupabaseClient): Promise<unknown> {
-  const { error } = await supabase.auth.signOut();
-  return error;
+export async function findUserByEmail(email: string): Promise<UserRow | null> {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, email, password_hash, role
+    FROM admin_users
+    WHERE LOWER(email) = LOWER(${email.trim()})
+    LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  const row = rows[0] as unknown as UserRow;
+  return {
+    id: row.id,
+    email: row.email,
+    password_hash: row.password_hash,
+    role: row.role as "admin" | "user",
+  };
 }

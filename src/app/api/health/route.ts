@@ -9,5 +9,5 @@ export const maxDuration = 10;
 /** 200 when server and database are healthy; 503 if database is unreachable. */
 export const GET = withApi(
   { access: "public", rateLimit: RATE_LIMITS.health },
-  async ({ supabase }) => ({ data: await checkHealth(supabase) }),
+  async () => ({ data: await checkHealth() }),
 );

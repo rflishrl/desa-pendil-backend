@@ -2,39 +2,37 @@
 
 API and admin panel for the Desa Pendil website. Admins manage news, articles, posts, and gallery photos here, and the public site reads them through the API.
 
-Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form with Zod, Supabase (Postgres, Auth, RLS), Vercel Blob for photos, and Vitest.
+Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form with Zod, Neon PostgreSQL (`@neondatabase/serverless`), self-contained scrypt password hashing and HMAC session auth, Vercel Blob for photos, and Vitest.
 
 ## How it fits together
 
 ```
-browser -> frontend (desa-pendil) -> backend API -> Supabase
+browser -> frontend (desa-pendil) -> backend API -> Neon PostgreSQL
                                           photos: Vercel Blob
 ```
 
-Code is split by layer: route, then service (rules and authorization), then repository (Supabase queries). `npm run check:boundaries` fails if one layer reaches past its neighbor.
+Code is split by layer: route, then service (rules and authorization), then repository (Neon SQL queries). `npm run check:boundaries` fails if one layer reaches past its neighbor.
 
 ## Run locally
 
-1. Create a Supabase project. Copy `.env.example` to `.env.local` and fill in the values.
-2. `npm install`
-3. `npm run db:push` applies the migrations in `supabase/migrations`.
-4. `npm run db:types` regenerates `src/types/database.ts` after the schema changes.
-5. `npm run create-admin -- you@example.com` creates an admin account. It asks for the password in the terminal. The admin role is stored in `app_metadata.role`.
+1. Create a Neon database project at neon.tech and copy your connection string.
+2. Copy `.env.example` to `.env.local` and set `DATABASE_URI` and `SESSION_SECRET`.
+3. `npm install` (or `bun install`)
+4. `npm run db:push` applies `scripts/schema.sql` to your Neon database.
+5. `npm run create-admin -- you@example.com` creates an admin account. It prompts for the password in the terminal.
 6. `npm run dev`, then open http://localhost:4000/login.
 
 ## Environment variables
 
-| Variable                   | Purpose                                                                                                               |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`             | Supabase project URL                                                                                                  |
-| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_...`)                                                                                |
-| `SUPABASE_SECRET_KEY`      | Secret key. Bypasses RLS, so keep it server side. Used for rate limiting, the photo cleanup cron, and `create-admin`. |
-| `SUPABASE_DB_URL`          | Session pooler connection string. Local commands only (`db:push`, `db:types`). Not needed on Vercel.                  |
-| `BLOB_READ_WRITE_TOKEN`    | Vercel Blob token. Photo upload stays off without it. Vercel fills it in when you connect a Blob store.               |
-| `ALLOWED_ORIGINS`          | Frontend addresses allowed to call the API from a browser (CORS), separated by commas                                 |
-| `FRONTEND_URL`             | Frontend address, used to refresh its cache after an edit                                                             |
-| `REVALIDATE_SECRET`        | Shared secret for that refresh call. Must match the frontend.                                                         |
-| `CRON_SECRET`              | Secret for the daily photo cleanup. Vercel sends it automatically.                                                    |
+| Variable                | Purpose                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `DATABASE_URI`          | Neon PostgreSQL connection string (`postgresql://...`). Can also use `DATABASE_URL`.   |
+| `SESSION_SECRET`        | 64+ character random secret string used to sign HMAC-SHA256 session cookies.          |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Automatically provided by Vercel.|
+| `ALLOWED_ORIGINS`       | Frontend addresses allowed to call the API from a browser (CORS), separated by commas. |
+| `FRONTEND_URL`          | Frontend address, used to refresh its cache after an edit.                             |
+| `REVALIDATE_SECRET`     | Shared secret for that refresh call. Must match the frontend.                          |
+| `CRON_SECRET`           | Secret for the daily photo cleanup. Vercel sends it automatically.                     |
 
 If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
 
@@ -58,19 +56,20 @@ News, articles, and posts share one table. Only published items of type `berita`
 
 ## Security
 
-- RLS is on for every table. The public can read published content and the gallery. Only admins can write or see drafts.
-- The secret key is used in three places only, listed in `src/lib/supabase/admin.ts`.
-- Upload type is checked from the file's bytes, not its name.
-- Login attempts are limited per IP. The counter lives in the database, so it holds across serverless instances.
-- Write requests must come from the same origin.
+- Database access uses `@neondatabase/serverless` over HTTPS with prepared SQL statements.
+- Passwords are encrypted with Node.js native `crypto.scrypt` with unique per-user salts.
+- Admin sessions use tamper-proof HMAC-SHA256 tokens stored in `httpOnly`, `sameSite=lax`, `secure` cookies.
+- Upload type is verified from the file's binary magic bytes, not its file name or extension.
+- Login attempts are rate limited per IP using database-backed records in PostgreSQL.
+- State-changing write requests require matching origin headers to prevent CSRF.
 
 ## Deploy to Vercel
 
-1. Import the repository and set the production branch.
-2. Add the variables above to the Production environment. `SUPABASE_DB_URL` is not needed.
-3. Under Storage, create a Blob store and connect it to the project.
-4. Redeploy, then open `/api/health`. It should return `"status":"ok"`.
-5. In the frontend project, set `API_BASE_URL` to `https://<this-project>.vercel.app/api` and redeploy it.
+1. Import the repository or link your existing Vercel project.
+2. Add `DATABASE_URI` and `SESSION_SECRET` to the Production environment variables.
+3. Under Storage, connect a Vercel Blob store (provides `BLOB_READ_WRITE_TOKEN`).
+4. Run `npm run db:push` once locally or via CI to create tables in Neon.
+5. Deploy, then open `/api/health`. It should return `"status":"ok"`.
 
 ## Scripts
 
@@ -81,6 +80,5 @@ News, articles, and posts share one table. Only published items of type `berita`
 | `npm run lint`             | ESLint                       |
 | `npm run test`             | Vitest                       |
 | `npm run check:boundaries` | Layer boundary check         |
-| `npm run db:push`          | Apply migrations to Supabase |
-| `npm run db:types`         | Regenerate database types    |
+| `npm run db:push`          | Apply schema to Neon database|
 | `npm run create-admin`     | Create an admin account      |

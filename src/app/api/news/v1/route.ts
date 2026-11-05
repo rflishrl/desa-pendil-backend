@@ -9,9 +9,8 @@ export const maxDuration = 10;
 /** Public: list of published news items (?q=&page=&limit=). */
 export const GET = withApi(
   { access: "public", rateLimit: RATE_LIMITS.publicRead },
-  async ({ request, supabase }) => ({
+  async ({ request }) => ({
     data: await listArticlesFor(
-      supabase,
       { audience: "public" },
       parseQuery(request, listQuerySchema(50)),
     ),

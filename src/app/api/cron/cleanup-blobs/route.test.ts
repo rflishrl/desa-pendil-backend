@@ -10,10 +10,6 @@ vi.mock("@/features/uploads/repository", () => ({
   listReferencedImageUrls: (...args: unknown[]) =>
     listReferencedImageUrls(...args),
 }));
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ kind: "admin" }),
-}));
-vi.mock("@/lib/supabase/server", () => ({ createPublicClient: () => ({}) }));
 
 const { GET } = await import("@/app/api/cron/cleanup-blobs/route");
 
@@ -39,14 +35,14 @@ describe("GET /api/cron/cleanup-blobs", () => {
     expect(deleteOrphanImages).not.toHaveBeenCalled();
   });
 
-  it("returns 200 with valid authorization bearer using admin client", async () => {
+  it("returns 200 with valid authorization bearer", async () => {
     const response = await call("Bearer cron-secret-untuk-pengujian");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       success: true,
       data: { scanned: 3, deleted: 1 },
     });
-    expect(listReferencedImageUrls).toHaveBeenCalledWith({ kind: "admin" });
+    expect(listReferencedImageUrls).toHaveBeenCalled();
 
     const [referenced, olderThan] = deleteOrphanImages.mock.calls[0] as [
       Set<string>,

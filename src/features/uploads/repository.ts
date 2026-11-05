@@ -1,25 +1,18 @@
 import "server-only";
 
-import { toAppError } from "@/lib/supabase/errors";
-import type { AppSupabaseClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/client";
 
-/**
- * Collects active image URLs referenced in articles and gallery.
- * Requires admin client to query draft items hidden by public RLS.
- */
-export async function listReferencedImageUrls(
-  adminClient: AppSupabaseClient,
-): Promise<Set<string>> {
+/** Collects active image URLs referenced in articles and gallery. */
+export async function listReferencedImageUrls(): Promise<Set<string>> {
+  const sql = getDb();
   const [articles, gallery] = await Promise.all([
-    adminClient.from("articles").select("thumbnail_url"),
-    adminClient.from("gallery_images").select("url"),
+    sql`SELECT thumbnail_url FROM articles WHERE thumbnail_url IS NOT NULL`,
+    sql`SELECT url FROM gallery_images WHERE url IS NOT NULL`,
   ]);
-  if (articles.error) throw toAppError(articles.error, "memuat foto artikel");
-  if (gallery.error) throw toAppError(gallery.error, "memuat foto galeri");
 
   const urls = [
-    ...articles.data.map((row) => row.thumbnail_url),
-    ...gallery.data.map((row) => row.url),
+    ...(articles as unknown as { thumbnail_url: string }[]).map((r) => r.thumbnail_url),
+    ...(gallery as unknown as { url: string }[]).map((r) => r.url),
   ];
   return new Set(urls.filter((url): url is string => Boolean(url)));
 }
