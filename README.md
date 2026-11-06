@@ -1,84 +1,143 @@
-# Desa Pendil backend
+# Desa Pendil Backend
 
-API and admin panel for the Desa Pendil website. Admins manage news, articles, posts, and gallery photos here, and the public site reads them through the API.
+API service and administrative panel for the Desa Pendil website. Administrators manage news, articles, announcements, and photo galleries here, while the public frontend consumes them via the REST API.
 
-Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, shadcn/ui, TanStack Query, react-hook-form with Zod, Neon PostgreSQL (`@neondatabase/serverless`), self-contained scrypt password hashing and HMAC session auth, Vercel Blob for photos, and Vitest.
+Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui, TanStack Query 5, react-hook-form with Zod, Neon PostgreSQL (`@neondatabase/serverless`), self-contained scrypt password hashing and HMAC-SHA256 session auth, Vercel Blob for media storage, and Vitest.
 
-## How it fits together
+## System Architecture
 
 ```
-browser -> frontend (desa-pendil) -> backend API -> Neon PostgreSQL
-                                          photos: Vercel Blob
+Browser -> Frontend (desa-pendil) -> Backend API -> Neon PostgreSQL
+                                           Photos: Vercel Blob
 ```
 
-Code is split by layer: route, then service (rules and authorization), then repository (Neon SQL queries). `npm run check:boundaries` fails if one layer reaches past its neighbor.
+The codebase is strictly layered:
 
-## Run locally
+- **Route handlers** (`src/app/api/**/route.ts`): Thin entry points wrapped with `withApi()`.
+- **Services** (`src/features/**/service.ts`): Business rules, data transformation, and authorization checks.
+- **Repositories** (`src/features/**/repository.ts`): The only layer permitted to query Neon PostgreSQL.
 
-1. Create a Neon database project at neon.tech and copy your connection string.
-2. Copy `.env.example` to `.env.local` and set `DATABASE_URI` and `SESSION_SECRET`.
-3. `npm install` (or `bun install`)
-4. `npm run db:push` applies `scripts/schema.sql` to your Neon database.
-5. `npm run create-admin -- you@example.com` creates an admin account. It prompts for the password in the terminal.
-6. `npm run dev`, then open http://localhost:4000/login.
+Layer boundaries are enforced by `npm run check:boundaries`. Client-side components cannot import server-only modules or make external fetch calls.
 
-## Environment variables
+## Getting Started
 
-| Variable                | Purpose                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------- |
-| `DATABASE_URI`          | Neon PostgreSQL connection string (`postgresql://...`). Can also use `DATABASE_URL`.    |
-| `SESSION_SECRET`        | 64+ character random secret string used to sign HMAC-SHA256 session cookies.            |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Automatically provided by Vercel. |
-| `ALLOWED_ORIGINS`       | Frontend addresses allowed to call the API from a browser (CORS), separated by commas.  |
-| `FRONTEND_URL`          | Frontend address, used to refresh its cache after an edit.                              |
-| `REVALIDATE_SECRET`     | Shared secret for that refresh call. Must match the frontend.                           |
-| `CRON_SECRET`           | Secret for the daily photo cleanup. Vercel sends it automatically.                      |
+### 1. Prerequisites
 
-If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
+- Node.js >= 22 (or Bun >= 1.4)
+- A Neon PostgreSQL database project ([neon.tech](https://neon.tech))
+- A Vercel Blob storage store (optional for local dev, required for photo uploads)
 
-## API
+### 2. Environment Setup
 
-Every response is `{ "success": true, "data": ... }` or `{ "success": false, "error": "..." }`. Lists return `data: { items, pagination }`.
+Copy `.env.example` to `.env.local`:
 
-| Method             | Path                        | Access | Purpose                                        |
-| ------------------ | --------------------------- | ------ | ---------------------------------------------- |
-| GET                | `/api/news/v1`              | Public | Published news (`?q=&page=&limit=`)            |
-| GET                | `/api/news/v1/{id or slug}` | Public | One news item                                  |
-| GET                | `/api/gallery/v1`           | Public | Gallery photos in order                        |
-| GET, POST          | `/api/admin/articles`       | Admin  | List and create content                        |
-| GET, PATCH, DELETE | `/api/admin/articles/{id}`  | Admin  | One content item                               |
-| GET, POST          | `/api/admin/gallery`        | Admin  | List and add photos                            |
-| GET, PATCH, DELETE | `/api/admin/gallery/{id}`   | Admin  | One photo                                      |
-| POST               | `/api/upload`               | Admin  | Upload a photo (JPG, PNG, or WebP, up to 4 MB) |
-| GET                | `/api/health`               | Public | Database check                                 |
+```bash
+# Windows
+copy .env.example .env.local
 
-News, articles, and posts share one table. Only published items of type `berita` appear in the public API.
+# macOS / Linux
+cp .env.example .env.local
+```
+
+Fill in `.env.local` with your configuration:
+
+| Variable                | Description                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URI`          | Neon PostgreSQL connection string (`postgresql://...`). Supports `DATABASE_URL` or `POSTGRES_URL` as fallbacks. |
+| `SESSION_SECRET`        | 64+ character random secret string used to sign HMAC-SHA256 session cookies.                                    |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for photo uploads. Automatically provided in Vercel deployments.                              |
+| `ALLOWED_ORIGINS`       | Comma-separated list of allowed frontend origins for CORS.                                                      |
+| `FRONTEND_URL`          | Public frontend URL. The backend triggers on-demand revalidation here on content updates.                       |
+| `REVALIDATE_SECRET`     | Shared secret token for frontend cache revalidation.                                                            |
+| `CRON_SECRET`           | Secret token used by Vercel Cron to trigger daily orphaned blob cleanup.                                        |
+
+Generate a secure random session secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+# or
+bun install
+```
+
+### 4. Push Database Schema
+
+Apply `scripts/schema.sql` to your Neon PostgreSQL database:
+
+```bash
+npm run db:push
+```
+
+### 5. Create Admin Account
+
+Register your admin credentials in Neon PostgreSQL:
+
+```bash
+npm run create-admin -- admin@desapendil.com
+```
+
+You will be prompted to enter a password (minimum 8 characters).
+
+### 6. Start Development Server
+
+```bash
+npm run dev
+```
+
+The development server starts at `http://localhost:4000`. Access the admin panel at `http://localhost:4000/login`.
+
+## API Endpoints
+
+All API responses follow a uniform JSON envelope: `{ "success": true, "data": ... }` or `{ "success": false, "error": "..." }`. Paginated listing endpoints return `data: { items, pagination }`.
+
+| Method             | Path                        | Access | Description                                       |
+| ------------------ | --------------------------- | ------ | ------------------------------------------------- |
+| GET                | `/api/news/v1`              | Public | List published news articles (`?q=&page=&limit=`) |
+| GET                | `/api/news/v1/{id or slug}` | Public | Retrieve a single news article by ID or slug      |
+| GET                | `/api/gallery/v1`           | Public | List photo gallery items in display order         |
+| GET, POST          | `/api/admin/articles`       | Admin  | List all content items or create a new article    |
+| GET, PATCH, DELETE | `/api/admin/articles/{id}`  | Admin  | Retrieve, update, or delete a content item        |
+| GET, POST          | `/api/admin/gallery`        | Admin  | List all gallery photos or add a new photo        |
+| GET, PATCH, DELETE | `/api/admin/gallery/{id}`   | Admin  | Retrieve, update, or delete a gallery photo       |
+| POST               | `/api/upload`               | Admin  | Upload an image (JPG, PNG, or WebP, up to 4 MB)   |
+| GET                | `/api/health`               | Public | Service health and database connectivity check    |
+
+News, articles, and posts share one table. Only published items of type `berita` (news) appear in the public API.
 
 ## Security
 
-- Database access uses `@neondatabase/serverless` over HTTPS with prepared SQL statements.
-- Passwords are encrypted with Node.js native `crypto.scrypt` with unique per-user salts.
-- Admin sessions use tamper-proof HMAC-SHA256 tokens stored in `httpOnly`, `sameSite=lax`, `secure` cookies.
-- Upload type is verified from the file's binary magic bytes, not its file name or extension.
-- Login attempts are rate limited per IP using database-backed records in PostgreSQL.
-- State-changing write requests require matching origin headers to prevent CSRF.
+- Database access uses `@neondatabase/serverless` over HTTPS with prepared SQL queries.
+- Passwords are encrypted using native Node.js `crypto.scrypt` with unique 16-byte random salts.
+- Admin sessions use HMAC-SHA256 tokens stored in `httpOnly`, `sameSite=lax`, `secure` cookies valid for 7 days.
+- Uploads are validated against binary magic bytes to prevent MIME-type spoofing.
+- Login endpoints enforce database-backed IP rate limiting (8 attempts per 10-minute window).
+- State-changing write requests enforce strict same-origin checks to defend against CSRF attacks.
 
-## Deploy to Vercel
+## Deployment to Vercel
 
-1. Import the repository or link your existing Vercel project.
-2. Add `DATABASE_URI` and `SESSION_SECRET` to the Production environment variables.
-3. Under Storage, connect a Vercel Blob store (provides `BLOB_READ_WRITE_TOKEN`).
-4. Run `npm run db:push` once locally or via CI to create tables in Neon.
-5. Deploy, then open `/api/health`. It should return `"status":"ok"`.
+1. Import the repository into Vercel. Next.js will be detected automatically.
+2. In Project Settings > Environment Variables, set `DATABASE_URI` (or connect Neon via Vercel Marketplace) and `SESSION_SECRET`.
+3. In Project Settings > Storage, create or connect a Vercel Blob store (automatically sets `BLOB_READ_WRITE_TOKEN`).
+4. Run `npm run db:push` once locally or in CI to ensure all tables exist in Neon.
+5. Deploy the application, then verify `https://<your-deployment>.vercel.app/api/health`.
 
-## Scripts
+## Available Scripts
 
-| Command                    | Purpose                       |
-| -------------------------- | ----------------------------- |
-| `npm run dev`              | Dev server on port 4000       |
-| `npm run typecheck`        | Type check                    |
-| `npm run lint`             | ESLint                        |
-| `npm run test`             | Vitest                        |
-| `npm run check:boundaries` | Layer boundary check          |
-| `npm run db:push`          | Apply schema to Neon database |
-| `npm run create-admin`     | Create an admin account       |
+| Command                    | Description                                       |
+| -------------------------- | ------------------------------------------------- |
+| `npm run dev`              | Start development server on port 4000             |
+| `npm run build`            | Build optimized production bundle                 |
+| `npm run start`            | Start production server on port 4000              |
+| `npm run typecheck`        | Run TypeScript type checks without emitting files |
+| `npm run lint`             | Run ESLint checks                                 |
+| `npm run test`             | Run Vitest unit and integration test suite        |
+| `npm run format`           | Format code using Prettier                        |
+| `npm run format:check`     | Check code formatting with Prettier               |
+| `npm run check:boundaries` | Enforce clean architectural boundary rules        |
+| `npm run db:push`          | Apply database schema to Neon PostgreSQL          |
+| `npm run create-admin`     | Create or update an admin user account in Neon    |
