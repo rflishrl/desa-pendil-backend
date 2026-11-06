@@ -35,7 +35,10 @@ export function getServerEnv(): ServerEnv {
 
   const envSource = {
     ...process.env,
-    DATABASE_URI: process.env.DATABASE_URI || process.env.DATABASE_URL,
+    DATABASE_URI:
+      process.env.DATABASE_URI ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL,
   };
 
   const result = serverEnvSchema.safeParse(envSource);

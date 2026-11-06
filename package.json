@@ -17,8 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "db:push": "node --env-file=.env.local scripts/db-push.mjs",
-    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs"
+    "db:push": "node scripts/db-push.mjs",
+    "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "7.0.1",
