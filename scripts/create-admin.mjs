@@ -14,7 +14,10 @@ if (!uri) {
   process.exit(1);
 }
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 const password = await rl.question("Password: ");
 rl.close();
 

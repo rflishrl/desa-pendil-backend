@@ -24,8 +24,8 @@ export function ThemeToggle() {
     return (
       <Button
         variant="ghost"
-        size="icon-sm"
-        className="size-8 text-muted-foreground"
+        size="icon"
+        className="size-9 text-muted-foreground"
         aria-label="Pilih tema tampilan"
       >
         <SunIcon className="size-4" aria-hidden="true" />
@@ -38,8 +38,8 @@ export function ThemeToggle() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon-sm"
-          className="size-8 text-muted-foreground hover:text-foreground"
+          size="icon"
+          className="size-9 text-muted-foreground hover:text-foreground"
           aria-label={`Tema aktif: ${theme}. Klik untuk mengganti tema`}
         >
           <SunIcon

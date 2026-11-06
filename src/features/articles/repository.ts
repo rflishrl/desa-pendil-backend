@@ -145,9 +145,11 @@ export async function updateArticle(
 ): Promise<{ item: ArticleDto; previousThumbnail: string | null } | null> {
   const sql = getDb();
 
-  const existing = await sql`SELECT thumbnail_url FROM articles WHERE id = ${id}::uuid LIMIT 1`;
+  const existing =
+    await sql`SELECT thumbnail_url FROM articles WHERE id = ${id}::uuid LIMIT 1`;
   if (existing.length === 0) return null;
-  const previousThumbnail = (existing[0] as { thumbnail_url: string | null }).thumbnail_url;
+  const previousThumbnail = (existing[0] as { thumbnail_url: string | null })
+    .thumbnail_url;
 
   const rows = await sql`
     UPDATE articles
@@ -170,7 +172,10 @@ export async function updateArticle(
   `;
 
   if (rows.length === 0) return null;
-  return { item: toDto(rows[0] as unknown as RawArticleRow), previousThumbnail };
+  return {
+    item: toDto(rows[0] as unknown as RawArticleRow),
+    previousThumbnail,
+  };
 }
 
 export async function deleteArticle(id: string): Promise<ArticleDto | null> {

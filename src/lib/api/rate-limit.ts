@@ -48,7 +48,8 @@ export async function consumeRateLimit(
       RETURNING count, GREATEST(1, EXTRACT(EPOCH FROM (reset_at - NOW()))::int) AS retry_after_seconds
     `;
 
-    const row = rows[0] as { count: number; retry_after_seconds: number } | undefined;
+    const row = rows[0] as
+      { count: number; retry_after_seconds: number } | undefined;
     if (row && row.count > rule.limit) {
       const minutes = Math.max(1, Math.ceil(row.retry_after_seconds / 60));
       throw new AppError(

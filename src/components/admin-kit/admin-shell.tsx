@@ -160,11 +160,11 @@ function UserMenu({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-sm"
-            className="size-8 rounded-full"
+            size="icon"
+            className="size-9 rounded-full"
             aria-label="Menu akun admin"
           >
-            <Avatar size="sm" className="size-7">
+            <Avatar size="sm" className="size-8">
               <AvatarFallback className="bg-brand/20 font-bold text-brand-strong">
                 {initials}
               </AvatarFallback>

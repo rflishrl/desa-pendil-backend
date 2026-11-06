@@ -29,15 +29,13 @@ import {
   type ArticleDto,
   type ArticleFormValues,
 } from "@/features/articles/schemas";
+import { cn } from "@/lib/utils";
 
 const Required = () => (
   <span aria-hidden="true" className="text-destructive">
     *
   </span>
 );
-
-const SELECT_CLASS =
-  "h-11 w-full rounded-lg border border-input bg-card px-3 text-sm focus-visible:ring-3 focus-visible:ring-ring/50";
 
 /** Article create and edit form sharing validation schemas with API routes. */
 export function ArticleForm({ article }: { article?: ArticleDto }) {
@@ -166,19 +164,38 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
               control={form.control}
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor="article-type">Jenis</FieldLabel>
-                  <select
-                    {...field}
-                    id="article-type"
-                    className={SELECT_CLASS}
+                  <FieldLabel id="article-type-label">Jenis</FieldLabel>
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="article-type-label"
                     aria-describedby="article-type-hint"
+                    className="grid grid-cols-3 gap-2"
                   >
-                    {ARTICLE_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {ARTICLE_TYPE_LABELS[type]}
-                      </option>
-                    ))}
-                  </select>
+                    {ARTICLE_TYPES.map((type) => {
+                      const checked = field.value === type;
+                      return (
+                        <label
+                          key={type}
+                          className={cn(
+                            "flex cursor-pointer items-center justify-center rounded-lg border p-2.5 text-center text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring",
+                            checked
+                              ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                              : "border-input bg-card text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="article-type"
+                            value={type}
+                            checked={checked}
+                            onChange={() => field.onChange(type)}
+                            className="sr-only"
+                          />
+                          {ARTICLE_TYPE_LABELS[type]}
+                        </label>
+                      );
+                    })}
+                  </div>
                   <FieldDescription id="article-type-hint">
                     Hanya berita yang tampil di halaman Berita website.
                   </FieldDescription>
@@ -191,19 +208,38 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
               control={form.control}
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor="article-status">Status</FieldLabel>
-                  <select
-                    {...field}
-                    id="article-status"
-                    className={SELECT_CLASS}
+                  <FieldLabel id="article-status-label">Status</FieldLabel>
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="article-status-label"
                     aria-describedby="article-status-hint"
+                    className="grid grid-cols-2 gap-2"
                   >
-                    {ARTICLE_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {ARTICLE_STATUS_LABELS[status]}
-                      </option>
-                    ))}
-                  </select>
+                    {ARTICLE_STATUSES.map((status) => {
+                      const checked = field.value === status;
+                      return (
+                        <label
+                          key={status}
+                          className={cn(
+                            "flex cursor-pointer items-center justify-center rounded-lg border p-2.5 text-center text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-ring",
+                            checked
+                              ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                              : "border-input bg-card text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="article-status"
+                            value={status}
+                            checked={checked}
+                            onChange={() => field.onChange(status)}
+                            className="sr-only"
+                          />
+                          {ARTICLE_STATUS_LABELS[status]}
+                        </label>
+                      );
+                    })}
+                  </div>
                   <FieldDescription id="article-status-hint">
                     Draf tidak muncul di API publik.
                   </FieldDescription>

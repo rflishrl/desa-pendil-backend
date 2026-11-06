@@ -20,6 +20,7 @@ export function SearchForm({
 }) {
   return (
     <form
+      method="get"
       role="search"
       className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center"
     >

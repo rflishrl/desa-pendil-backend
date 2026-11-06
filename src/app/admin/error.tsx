@@ -24,8 +24,8 @@ export default function AdminError({
         <AlertCircleIcon aria-hidden="true" />
         <AlertTitle>Data tidak dapat dimuat</AlertTitle>
         <AlertDescription>
-          Pastikan variabel <code>DATABASE_URI</code> di <code>.env.local</code> sudah benar dan
-          database Neon dapat dijangkau.
+          Pastikan variabel <code>DATABASE_URI</code> di <code>.env.local</code>{" "}
+          sudah benar dan database Neon dapat dijangkau.
           {error.digest && <span className="block">Kode: {error.digest}</span>}
         </AlertDescription>
       </Alert>

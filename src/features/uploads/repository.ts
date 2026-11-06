@@ -11,7 +11,9 @@ export async function listReferencedImageUrls(): Promise<Set<string>> {
   ]);
 
   const urls = [
-    ...(articles as unknown as { thumbnail_url: string }[]).map((r) => r.thumbnail_url),
+    ...(articles as unknown as { thumbnail_url: string }[]).map(
+      (r) => r.thumbnail_url,
+    ),
     ...(gallery as unknown as { url: string }[]).map((r) => r.url),
   ];
   return new Set(urls.filter((url): url is string => Boolean(url)));

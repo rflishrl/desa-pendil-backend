@@ -142,11 +142,11 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.items.map((article) => (
+            {data.items.map((article, index) => (
               <TableRow key={article.id}>
                 <TableCell className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Thumb src={article.thumbnail ?? ""} />
+                    <Thumb src={article.thumbnail ?? ""} priority={index < 4} />
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{article.title}</p>
                       <p className="truncate text-muted-foreground">
@@ -174,10 +174,10 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
       </div>
 
       <ul className="space-y-3 md:hidden">
-        {data.items.map((article) => (
+        {data.items.map((article, index) => (
           <li key={article.id} className="rounded-lg bg-card p-4 shadow-card">
             <div className="flex gap-3">
-              <Thumb src={article.thumbnail ?? ""} />
+              <Thumb src={article.thumbnail ?? ""} priority={index < 3} />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{article.title}</p>
                 <p className="text-sm text-muted-foreground">

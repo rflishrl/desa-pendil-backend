@@ -14,7 +14,8 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     env: {
-      DATABASE_URI: "postgresql://test:test@ep-test.neon.tech/neondb?sslmode=require",
+      DATABASE_URI:
+        "postgresql://test:test@ep-test.neon.tech/neondb?sslmode=require",
       SESSION_SECRET: "0123456789abcdef0123456789abcdef",
       CRON_SECRET: "cron-secret-untuk-pengujian",
     },

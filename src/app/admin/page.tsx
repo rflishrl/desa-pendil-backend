@@ -219,8 +219,8 @@ export default async function DashboardPage() {
               Aksi Cepat
             </CardTitle>
             <CardDescription>
-              Pintasan cepat untuk mempublikasikan artikel berita atau menambahkan
-              foto ke galeri publik desa.
+              Pintasan cepat untuk mempublikasikan artikel berita atau
+              menambahkan foto ke galeri publik desa.
             </CardDescription>
           </CardHeader>
           <CardContent>

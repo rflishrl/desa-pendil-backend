@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircleIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { AlertCircleIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,6 +20,7 @@ import { loginSchema, type LoginInput } from "@/features/auth/schemas";
 export function LoginForm() {
   const login = useLogin();
   const alertRef = useRef<HTMLDivElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -80,18 +81,39 @@ export function LoginForm() {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="login-password">Password</FieldLabel>
-              <Input
-                {...field}
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                aria-invalid={fieldState.invalid}
-                aria-describedby={
-                  fieldState.invalid ? "login-password-error" : undefined
-                }
-                className="h-11"
-              />
+              <div className="relative">
+                <Input
+                  {...field}
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  aria-invalid={fieldState.invalid}
+                  aria-describedby={
+                    fieldState.invalid ? "login-password-error" : undefined
+                  }
+                  className="h-11 pr-11"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={
+                    showPassword
+                      ? "Sembunyikan kata sandi"
+                      : "Tampilkan kata sandi"
+                  }
+                  aria-pressed={showPassword}
+                  className="absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="size-4" aria-hidden="true" />
+                  ) : (
+                    <EyeIcon className="size-4" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
               {fieldState.invalid && (
                 <FieldError
                   id="login-password-error"

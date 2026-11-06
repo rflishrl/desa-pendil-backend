@@ -96,7 +96,8 @@ export async function updateGalleryImage(
 ): Promise<{ item: GalleryDto; previousUrl: string } | null> {
   const sql = getDb();
 
-  const existing = await sql`SELECT url FROM gallery_images WHERE id = ${id}::uuid LIMIT 1`;
+  const existing =
+    await sql`SELECT url FROM gallery_images WHERE id = ${id}::uuid LIMIT 1`;
   if (existing.length === 0) return null;
   const previousUrl = (existing[0] as { url: string }).url;
 

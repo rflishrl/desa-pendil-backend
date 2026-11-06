@@ -17,7 +17,11 @@ interface SessionPayload {
 
 function getSecretKey(): string {
   const env = getServerEnv();
-  return env.SESSION_SECRET || env.DATABASE_URI || "default-secret-key-32-chars-long!";
+  return (
+    env.SESSION_SECRET ||
+    env.DATABASE_URI ||
+    "default-secret-key-32-chars-long!"
+  );
 }
 
 /** Signs a session token for an authenticated actor. */

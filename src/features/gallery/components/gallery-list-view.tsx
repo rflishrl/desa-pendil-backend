@@ -31,7 +31,13 @@ import {
 } from "@/features/gallery/queries";
 import type { GalleryDto } from "@/features/gallery/schemas";
 
-function PhotoCard({ image }: { image: GalleryDto }) {
+function PhotoCard({
+  image,
+  priority = false,
+}: {
+  image: GalleryDto;
+  priority?: boolean;
+}) {
   const remove = useDeleteGalleryImage();
   return (
     <li className="overflow-hidden rounded-lg bg-card shadow-card">
@@ -42,7 +48,8 @@ function PhotoCard({ image }: { image: GalleryDto }) {
         alt={image.alt}
         width={400}
         height={300}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         decoding="async"
         className="aspect-4/3 w-full bg-muted object-cover"
       />
@@ -128,8 +135,8 @@ export function GalleryListView({ params }: { params: GalleryListParams }) {
   return (
     <div aria-busy={isFetching}>
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {data.items.map((image) => (
-          <PhotoCard key={image.id} image={image} />
+        {data.items.map((image, index) => (
+          <PhotoCard key={image.id} image={image} priority={index < 3} />
         ))}
       </ul>
       <PaginationNav

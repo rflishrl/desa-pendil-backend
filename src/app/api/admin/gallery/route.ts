@@ -6,15 +6,12 @@ import { listQuerySchema } from "@/lib/schemas/common";
 export const maxDuration = 10;
 
 /** Admin: all gallery photos (12 per page). */
-export const GET = withApi(
-  { access: "admin" },
-  async ({ request, actor }) => ({
-    data: await listGalleryFor(
-      { audience: "admin", actor },
-      parseQuery(request, listQuerySchema(12)),
-    ),
-  }),
-);
+export const GET = withApi({ access: "admin" }, async ({ request, actor }) => ({
+  data: await listGalleryFor(
+    { audience: "admin", actor },
+    parseQuery(request, listQuerySchema(12)),
+  ),
+}));
 
 export const POST = withApi(
   { access: "admin" },

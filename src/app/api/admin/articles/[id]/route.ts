@@ -20,11 +20,7 @@ export const GET = withApi<"admin", Params>(
 export const PATCH = withApi<"admin", Params>(
   { access: "admin" },
   async ({ request, params, actor }) => ({
-    data: await updateArticle(
-      actor,
-      params.id,
-      await readJson(request),
-    ),
+    data: await updateArticle(actor, params.id, await readJson(request)),
   }),
 );
 

@@ -24,15 +24,15 @@ Code is split by layer: route, then service (rules and authorization), then repo
 
 ## Environment variables
 
-| Variable                | Purpose                                                                                |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URI`          | Neon PostgreSQL connection string (`postgresql://...`). Can also use `DATABASE_URL`.   |
-| `SESSION_SECRET`        | 64+ character random secret string used to sign HMAC-SHA256 session cookies.          |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Automatically provided by Vercel.|
-| `ALLOWED_ORIGINS`       | Frontend addresses allowed to call the API from a browser (CORS), separated by commas. |
-| `FRONTEND_URL`          | Frontend address, used to refresh its cache after an edit.                             |
-| `REVALIDATE_SECRET`     | Shared secret for that refresh call. Must match the frontend.                          |
-| `CRON_SECRET`           | Secret for the daily photo cleanup. Vercel sends it automatically.                     |
+| Variable                | Purpose                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `DATABASE_URI`          | Neon PostgreSQL connection string (`postgresql://...`). Can also use `DATABASE_URL`.    |
+| `SESSION_SECRET`        | 64+ character random secret string used to sign HMAC-SHA256 session cookies.            |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token. Photo upload stays off without it. Automatically provided by Vercel. |
+| `ALLOWED_ORIGINS`       | Frontend addresses allowed to call the API from a browser (CORS), separated by commas.  |
+| `FRONTEND_URL`          | Frontend address, used to refresh its cache after an edit.                              |
+| `REVALIDATE_SECRET`     | Shared secret for that refresh call. Must match the frontend.                           |
+| `CRON_SECRET`           | Secret for the daily photo cleanup. Vercel sends it automatically.                      |
 
 If `FRONTEND_URL` or `REVALIDATE_SECRET` is empty, instant refresh is off and the frontend picks up changes when its 5 minute cache expires.
 
@@ -73,12 +73,12 @@ News, articles, and posts share one table. Only published items of type `berita`
 
 ## Scripts
 
-| Command                    | Purpose                      |
-| -------------------------- | ---------------------------- |
-| `npm run dev`              | Dev server on port 4000      |
-| `npm run typecheck`        | Type check                   |
-| `npm run lint`             | ESLint                       |
-| `npm run test`             | Vitest                       |
-| `npm run check:boundaries` | Layer boundary check         |
-| `npm run db:push`          | Apply schema to Neon database|
-| `npm run create-admin`     | Create an admin account      |
+| Command                    | Purpose                       |
+| -------------------------- | ----------------------------- |
+| `npm run dev`              | Dev server on port 4000       |
+| `npm run typecheck`        | Type check                    |
+| `npm run lint`             | ESLint                        |
+| `npm run test`             | Vitest                        |
+| `npm run check:boundaries` | Layer boundary check          |
+| `npm run db:push`          | Apply schema to Neon database |
+| `npm run create-admin`     | Create an admin account       |
