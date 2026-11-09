@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "@fontsource-variable/mulish";
+@import "@fontsource-variable/open-sans";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -90,11 +92,9 @@
 
 @theme inline {
   --font-sans:
-    "Montserrat", var(--font-montserrat), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    sans-serif;
+    "Open Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading:
-    "Montserrat", var(--font-montserrat), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    sans-serif;
+    "Mulish Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-danger-soft: var(--danger-soft);

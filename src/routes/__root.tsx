@@ -22,15 +22,7 @@ export const Route = createRootRoute({
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
-    links: [
-      { rel: "icon", href: "/favicon.ico" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&display=swap",
-      },
-    ],
+    links: [{ rel: "icon", href: "/favicon.ico" }],
   }),
   component: RootComponent,
   notFoundComponent: RootNotFound,
