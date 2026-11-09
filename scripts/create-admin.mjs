@@ -1,6 +1,6 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
 import readline from "node:readline/promises";
 import { neon } from "@neondatabase/serverless";
 
@@ -21,15 +21,10 @@ if (!email || !email.includes("@")) {
   process.exit(1);
 }
 
-const uri =
-  process.env.DATABASE_URI ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL;
+const uri = process.env.DATABASE_URI || process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 if (!uri) {
-  console.error(
-    "Error: DATABASE_URI, DATABASE_URL, or POSTGRES_URL is required.",
-  );
+  console.error("Error: DATABASE_URI, DATABASE_URL, or POSTGRES_URL is required.");
   process.exit(1);
 }
 

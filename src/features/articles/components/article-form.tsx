@@ -1,21 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "@tanstack/react-router";
 import { AlertCircleIcon } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ImageField } from "@/components/admin-kit/image-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSaveArticle } from "@/features/articles/hooks";
@@ -25,9 +19,9 @@ import {
   ARTICLE_STATUSES,
   ARTICLE_TYPE_LABELS,
   ARTICLE_TYPES,
-  articleCreateSchema,
   type ArticleDto,
   type ArticleFormValues,
+  articleCreateSchema,
 } from "@/features/articles/schemas";
 import { cn } from "@/lib/utils";
 
@@ -60,10 +54,18 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
 
   const busy = save.isPending || save.isSuccess;
 
+  const onInvalid = (errors: Record<string, unknown>) => {
+    const firstKey = Object.keys(errors)[0];
+    if (firstKey) {
+      const element = document.getElementById(`article-${firstKey}`);
+      element?.focus();
+    }
+  };
+
   return (
     <form
       noValidate
-      onSubmit={form.handleSubmit((values) => save.mutate(values))}
+      onSubmit={form.handleSubmit((values) => save.mutate(values), onInvalid)}
       className="space-y-6"
     >
       {save.error && (
@@ -88,16 +90,14 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
                   id="article-title"
                   maxLength={200}
                   autoComplete="off"
+                  enterKeyHint="next"
                   required
                   aria-invalid={fieldState.invalid}
                   aria-describedby="article-title-error"
                   className="h-11 bg-card"
                 />
                 {fieldState.invalid && (
-                  <FieldError
-                    id="article-title-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="article-title-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -119,10 +119,7 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
                   className="bg-card"
                 />
                 {fieldState.invalid && (
-                  <FieldError
-                    id="article-excerpt-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="article-excerpt-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -147,10 +144,7 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
                   className="bg-card"
                 />
                 {fieldState.invalid && (
-                  <FieldError
-                    id="article-content-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="article-content-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -259,16 +253,15 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
                     {...field}
                     id="article-author"
                     maxLength={80}
+                    autoComplete="name"
+                    autoCapitalize="words"
                     required
                     aria-invalid={fieldState.invalid}
                     aria-describedby="article-author-error"
                     className="h-11 bg-card"
                   />
                   {fieldState.invalid && (
-                    <FieldError
-                      id="article-author-error"
-                      errors={[fieldState.error]}
-                    />
+                    <FieldError id="article-author-error" errors={[fieldState.error]} />
                   )}
                 </Field>
               )}
@@ -295,14 +288,10 @@ export function ArticleForm({ article }: { article?: ArticleDto }) {
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button asChild variant="outline" size="lg" className="h-11 px-4">
-          <Link href={ARTICLES_ADMIN_PATH}>Batal</Link>
+          <Link to={ARTICLES_ADMIN_PATH}>Batal</Link>
         </Button>
         <Button type="submit" size="lg" className="h-11 px-4" disabled={busy}>
-          {busy
-            ? "Menyimpan..."
-            : article
-              ? "Simpan perubahan"
-              : "Tambah konten"}
+          {busy ? "Menyimpan..." : article ? "Simpan perubahan" : "Tambah konten"}
         </Button>
       </div>
     </form>

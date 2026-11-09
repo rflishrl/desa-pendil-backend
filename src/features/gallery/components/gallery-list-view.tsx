@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  AlertCircleIcon,
-  ImagesIcon,
-  PencilIcon,
-  PlusIcon,
-} from "lucide-react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
+import { AlertCircleIcon, ImagesIcon, PencilIcon, PlusIcon } from "lucide-react";
 
 import { DeleteDialog } from "@/components/admin-kit/delete-dialog";
 import { ListSkeleton } from "@/components/admin-kit/list-skeleton";
@@ -21,23 +16,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  useDeleteGalleryImage,
-  useGalleryList,
-} from "@/features/gallery/hooks";
-import {
-  GALLERY_ADMIN_PATH,
-  type GalleryListParams,
-} from "@/features/gallery/queries";
+import { useDeleteGalleryImage, useGalleryList } from "@/features/gallery/hooks";
+import { GALLERY_ADMIN_PATH, type GalleryListParams } from "@/features/gallery/queries";
 import type { GalleryDto } from "@/features/gallery/schemas";
 
-function PhotoCard({
-  image,
-  priority = false,
-}: {
-  image: GalleryDto;
-  priority?: boolean;
-}) {
+function PhotoCard({ image, priority = false }: { image: GalleryDto; priority?: boolean }) {
   const remove = useDeleteGalleryImage();
   return (
     <li className="overflow-hidden rounded-lg bg-card shadow-card">
@@ -56,36 +39,29 @@ function PhotoCard({
       <div className="space-y-1 p-4">
         <p className="line-clamp-2 font-semibold">{image.alt}</p>
         {image.caption && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {image.caption}
-          </p>
+          <p className="line-clamp-2 text-sm text-muted-foreground">{image.caption}</p>
         )}
-        <p className="text-sm text-muted-foreground">
-          Urutan {image.sortOrder}
-        </p>
+        <p className="text-sm text-muted-foreground">Urutan {image.sortOrder}</p>
       </div>
       <div className="flex justify-end gap-1 border-t px-2 py-2">
         <Button asChild variant="ghost" size="lg" className="h-11 px-3">
           <Link
-            href={`${GALLERY_ADMIN_PATH}/${image.id}/edit`}
+            to="/admin/gallery/$id/edit"
+            params={{ id: image.id }}
             aria-label={`Ubah ${image.alt}`}
           >
             <PencilIcon aria-hidden="true" />
             Ubah
           </Link>
         </Button>
-        <DeleteDialog
-          itemName={image.alt}
-          onConfirm={() => remove.mutateAsync(image.id)}
-        />
+        <DeleteDialog itemName={image.alt} onConfirm={() => remove.mutateAsync(image.id)} />
       </div>
     </li>
   );
 }
 
 export function GalleryListView({ params }: { params: GalleryListParams }) {
-  const { data, error, isPending, isFetching, refetch } =
-    useGalleryList(params);
+  const { data, error, isPending, isFetching, refetch } = useGalleryList(params);
 
   if (isPending) return <ListSkeleton />;
 
@@ -96,11 +72,7 @@ export function GalleryListView({ params }: { params: GalleryListParams }) {
         <AlertTitle>Data gagal dimuat</AlertTitle>
         <AlertDescription>
           <p>{error.message}</p>
-          <Button
-            variant="outline"
-            className="mt-2 h-11"
-            onClick={() => refetch()}
-          >
+          <Button variant="outline" className="mt-2 h-11" onClick={() => refetch()}>
             Coba lagi
           </Button>
         </AlertDescription>
@@ -116,13 +88,11 @@ export function GalleryListView({ params }: { params: GalleryListParams }) {
             <ImagesIcon aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>Belum ada foto</EmptyTitle>
-          <EmptyDescription>
-            Tambahkan foto pertama agar tampil di Galeri Desa.
-          </EmptyDescription>
+          <EmptyDescription>Tambahkan foto pertama agar tampil di Galeri Desa.</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button asChild size="lg" className="h-11 px-4">
-            <Link href={`${GALLERY_ADMIN_PATH}/new`}>
+            <Link to={`${GALLERY_ADMIN_PATH}/new`}>
               <PlusIcon aria-hidden="true" />
               Tambah foto
             </Link>
@@ -139,11 +109,7 @@ export function GalleryListView({ params }: { params: GalleryListParams }) {
           <PhotoCard key={image.id} image={image} priority={index < 3} />
         ))}
       </ul>
-      <PaginationNav
-        pagination={data.pagination}
-        basePath={GALLERY_ADMIN_PATH}
-        q=""
-      />
+      <PaginationNav pagination={data.pagination} basePath={GALLERY_ADMIN_PATH} q="" />
     </div>
   );
 }

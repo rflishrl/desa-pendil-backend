@@ -45,12 +45,21 @@ describe("withApi: response envelope", () => {
     expect(response.headers.get("x-request-id")).toBeTruthy();
   });
 
-  it("public GET responses are private, no-store", async () => {
+  it("public GET responses are private, no-store by default", async () => {
     const GET = withApi({ access: "public" }, async () => ({ data: [] }));
     const response = await GET(sameOriginRequest("/api/x"));
     const cacheControl = response.headers.get("cache-control") ?? "";
 
     expect(cacheControl).toBe("private, no-store");
+  });
+
+  it("public GET responses use custom cacheControl when provided", async () => {
+    const GET = withApi({ access: "public", cacheControl: "public, s-maxage=60" }, async () => ({
+      data: [],
+    }));
+    const response = await GET(sameOriginRequest("/api/x"));
+
+    expect(response.headers.get("cache-control")).toBe("public, s-maxage=60");
   });
 
   it("maps AppError to corresponding HTTP status code", async () => {

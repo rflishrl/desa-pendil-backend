@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import type { Pagination } from "@/lib/api/types";
@@ -34,7 +34,7 @@ export function PaginationNav({
       <div className="flex gap-2">
         {page > 1 && (
           <Button asChild variant="outline" size="lg" className="h-11 px-3">
-            <Link href={href(page - 1)} rel="prev">
+            <Link to={href(page - 1)} rel="prev">
               <ChevronLeftIcon aria-hidden="true" />
               Sebelumnya
             </Link>
@@ -42,7 +42,7 @@ export function PaginationNav({
         )}
         {page < totalPages && (
           <Button asChild variant="outline" size="lg" className="h-11 px-3">
-            <Link href={href(page + 1)} rel="next">
+            <Link to={href(page + 1)} rel="next">
               Berikutnya
               <ChevronRightIcon aria-hidden="true" />
             </Link>

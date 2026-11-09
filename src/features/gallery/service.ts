@@ -1,19 +1,19 @@
 import "server-only";
 
 import {
-  deleteGalleryImage as repoDeleteGalleryImage,
   findGalleryImage,
   insertGalleryImage,
   listGalleryImages,
+  deleteGalleryImage as repoDeleteGalleryImage,
   updateGalleryImage as repoUpdateGalleryImage,
 } from "@/features/gallery/repository";
 import {
+  type GalleryDto,
   galleryCreateSchema,
   galleryUpdateSchema,
-  type GalleryDto,
 } from "@/features/gallery/schemas";
 import { notFound } from "@/lib/api/errors";
-import { paginate, type Paginated } from "@/lib/api/types";
+import { type Paginated, paginate } from "@/lib/api/types";
 import type { Actor } from "@/lib/auth/actor";
 import { assertAdmin } from "@/lib/auth/authorize";
 import { isUuid } from "@/lib/ids";
@@ -24,8 +24,7 @@ import { deleteImage } from "@/lib/storage/blob";
 const LABEL = "Foto";
 const REVALIDATE_TAGS = ["gallery"];
 
-type Viewer =
-  { audience: "public" } | { audience: "admin"; actor: Actor | null };
+type Viewer = { audience: "public" } | { audience: "admin"; actor: Actor | null };
 
 /** Public: 50 items/page. Admin: 12 items/page. Gallery items are always published. */
 export async function listGalleryFor(
@@ -43,10 +42,7 @@ export async function listGalleryFor(
   return paginate(items, total, page, limit);
 }
 
-export async function getGalleryImage(
-  actor: Actor | null,
-  id: string,
-): Promise<GalleryDto> {
+export async function getGalleryImage(actor: Actor | null, id: string): Promise<GalleryDto> {
   assertAdmin(actor);
   const image = isUuid(id) ? await findGalleryImage(id) : null;
   if (!image) throw notFound(LABEL);

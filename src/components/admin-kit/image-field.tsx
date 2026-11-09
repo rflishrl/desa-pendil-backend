@@ -14,11 +14,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useUploadPhoto } from "@/features/uploads/hooks";
-import {
-  ACCEPTED_IMAGE_TYPES,
-  MAX_UPLOAD_MB,
-  type UploadFolder,
-} from "@/features/uploads/schemas";
+import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_MB, type UploadFolder } from "@/features/uploads/schemas";
 import { cn } from "@/lib/utils";
 
 interface ImageFieldProps {
@@ -31,14 +27,7 @@ interface ImageFieldProps {
 }
 
 /** Image upload field (uploads directly to Blob storage) with manual URL fallback. */
-export function ImageField({
-  value,
-  onChange,
-  onBlur,
-  folder,
-  required,
-  error,
-}: ImageFieldProps) {
+export function ImageField({ value, onChange, onBlur, folder, required, error }: ImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const urlId = useId();
   const fileInputId = useId();
@@ -114,11 +103,7 @@ export function ImageField({
           </div>
         ) : value ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary URL preview
-          <img
-            src={value}
-            alt="Pratinjau foto"
-            className="size-full object-cover"
-          />
+          <img src={value} alt="Pratinjau foto" className="size-full object-cover" />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
             <ImageIcon aria-hidden="true" className="size-8" />
@@ -165,9 +150,7 @@ export function ImageField({
           </Button>
         )}
       </div>
-      <FieldDescription>
-        JPG, PNG, atau WebP. Maksimal {MAX_UPLOAD_MB} MB.
-      </FieldDescription>
+      <FieldDescription>JPG, PNG, atau WebP. Maksimal {MAX_UPLOAD_MB} MB.</FieldDescription>
 
       {upload.error && (
         <p role="alert" className="text-sm font-medium text-destructive">
@@ -176,9 +159,7 @@ export function ImageField({
       )}
 
       <Field data-invalid={Boolean(error)}>
-        <FieldLabel htmlFor={urlId}>
-          Atau tempel alamat foto yang sudah diunggah
-        </FieldLabel>
+        <FieldLabel htmlFor={urlId}>Atau tempel alamat foto yang sudah diunggah</FieldLabel>
         <Input
           id={urlId}
           type="url"
@@ -192,8 +173,7 @@ export function ImageField({
           className="h-11 bg-card"
         />
         <FieldDescription id={`${urlId}-hint`}>
-          Hanya alamat Vercel Blob
-          (https://...public.blob.vercel-storage.com/...).
+          Hanya alamat Vercel Blob (https://...public.blob.vercel-storage.com/...).
         </FieldDescription>
         {error && <FieldError id={`${urlId}-error`}>{error}</FieldError>}
       </Field>

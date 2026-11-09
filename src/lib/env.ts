@@ -17,12 +17,21 @@ const serverEnvSchema = z.object({
     .string()
     .trim()
     .min(1, "must be the Neon PostgreSQL connection string (postgresql://...)"),
-  SESSION_SECRET: z.string().trim().optional(),
+  SESSION_SECRET: z
+    .string()
+    .trim()
+    .min(32, "must be at least 32 characters long")
+    .optional()
+    .refine((val) => process.env.NODE_ENV !== "production" || Boolean(val && val.length >= 32), {
+      message: "is required and must be at least 32 characters in production",
+    }),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   FRONTEND_URL: z.string().optional(),
   REVALIDATE_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
+  TURNSTILE_SECRET_KEY: z.string().trim().optional(),
+  TURNSTILE_ALLOWED_HOSTNAMES: z.string().trim().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -35,10 +44,7 @@ export function getServerEnv(): ServerEnv {
 
   const envSource = {
     ...process.env,
-    DATABASE_URI:
-      process.env.DATABASE_URI ||
-      process.env.DATABASE_URL ||
-      process.env.POSTGRES_URL,
+    DATABASE_URI: process.env.DATABASE_URI || process.env.DATABASE_URL || process.env.POSTGRES_URL,
   };
 
   const result = serverEnvSchema.safeParse(envSource);
@@ -59,4 +65,32 @@ export function getAllowedOrigins(): string[] {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+}
+
+/** Secret key used by server-side Cloudflare Turnstile siteverify. */
+export function getTurnstileSecretKey(): string {
+  const env = getServerEnv();
+  const key =
+    env.TURNSTILE_SECRET_KEY ||
+    (process.env.NODE_ENV !== "production" ? "1x0000000000000000000000000000000AA" : undefined);
+  if (!key) {
+    throw new ConfigError("TURNSTILE_SECRET_KEY belum dikonfigurasi di environment.");
+  }
+  return key;
+}
+
+/** Hostnames allowed for Turnstile validation (e.g. ['desapendil.id', 'admin.desapendil.id']). */
+export function getTurnstileAllowedHostnames(): string[] {
+  const env = getServerEnv();
+  const raw = env.TURNSTILE_ALLOWED_HOSTNAMES;
+  if (raw) {
+    return raw
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean);
+  }
+  if (process.env.NODE_ENV !== "production") {
+    return ["localhost", "127.0.0.1", "example.com"];
+  }
+  return [];
 }

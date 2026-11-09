@@ -13,15 +13,10 @@ for (const envFile of [".env.local", ".env.production.local", ".env"]) {
   }
 }
 
-const uri =
-  process.env.DATABASE_URI ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL;
+const uri = process.env.DATABASE_URI || process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 if (!uri) {
-  console.error(
-    "Error: DATABASE_URI, DATABASE_URL, or POSTGRES_URL is required.",
-  );
+  console.error("Error: DATABASE_URI, DATABASE_URL, or POSTGRES_URL is required.");
   process.exit(1);
 }
 

@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,16 +43,12 @@ export function SearchForm({
         />
       </div>
       <div className="flex gap-2">
-        <Button
-          type="submit"
-          size="lg"
-          className="h-11 flex-1 px-4 sm:flex-none"
-        >
+        <Button type="submit" size="lg" className="h-11 flex-1 px-4 sm:flex-none">
           Cari
         </Button>
         {defaultValue && (
           <Button asChild variant="outline" size="lg" className="h-11 px-4">
-            <Link href={clearHref}>Hapus pencarian</Link>
+            <Link to={clearHref}>Hapus pencarian</Link>
           </Button>
         )}
       </div>

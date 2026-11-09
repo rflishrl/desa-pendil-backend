@@ -10,11 +10,8 @@ function makeQueryClient(): QueryClient {
         staleTime: 30_000,
         // Do not retry 4xx client errors (e.g. 401, 404).
         retry: (failureCount, error) =>
-          !(
-            error instanceof ApiClientError &&
-            error.status >= 400 &&
-            error.status < 500
-          ) && failureCount < 2,
+          !(error instanceof ApiClientError && error.status >= 400 && error.status < 500) &&
+          failureCount < 2,
       },
     },
   });

@@ -12,11 +12,7 @@ function describe(error: unknown): unknown {
 }
 
 /** Emits single-line JSON logs to simplify correlation by `requestId` in log drains. */
-export function log(
-  level: Level,
-  message: string,
-  fields: Record<string, unknown> = {},
-): void {
+export function log(level: Level, message: string, fields: Record<string, unknown> = {}): void {
   const entry = JSON.stringify({
     level,
     message,

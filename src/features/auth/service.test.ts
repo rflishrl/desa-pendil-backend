@@ -14,6 +14,7 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 import { hashPassword } from "@/lib/auth/password";
+
 const { login, logout } = await import("@/features/auth/service");
 
 const adminPassword = "secret-password";
@@ -37,10 +38,12 @@ beforeEach(() => {
   clearSessionCookie.mockReset();
 });
 
+const validTurnstileToken = "dummy-turnstile-token";
+
 describe("login: validation", () => {
   it("rejects invalid email format", async () => {
     await expect(
-      login({ email: "not-an-email", password: "x" }),
+      login({ email: "not-an-email", password: "x", turnstileToken: validTurnstileToken }),
     ).rejects.toMatchObject({
       name: "ZodError",
     });
@@ -49,7 +52,15 @@ describe("login: validation", () => {
 
   it("rejects empty password", async () => {
     await expect(
-      login({ email: "admin@desa-pendil.id", password: "" }),
+      login({ email: "admin@desa-pendil.id", password: "", turnstileToken: validTurnstileToken }),
+    ).rejects.toMatchObject({
+      name: "ZodError",
+    });
+  });
+
+  it("rejects empty turnstile token", async () => {
+    await expect(
+      login({ email: "admin@desa-pendil.id", password: adminPassword, turnstileToken: "" }),
     ).rejects.toMatchObject({
       name: "ZodError",
     });
@@ -60,6 +71,7 @@ describe("login: validation", () => {
     await login({
       email: "  Admin@Desa-Pendil.ID ",
       password: adminPassword,
+      turnstileToken: validTurnstileToken,
     });
     expect(findUserByEmail).toHaveBeenCalledWith("admin@desa-pendil.id");
   });
@@ -69,7 +81,11 @@ describe("login: authorization", () => {
   it("succeeds with valid admin credentials and sets session cookie", async () => {
     findUserByEmail.mockResolvedValue(admin);
     await expect(
-      login({ email: admin.email, password: adminPassword }),
+      login({
+        email: admin.email,
+        password: adminPassword,
+        turnstileToken: validTurnstileToken,
+      }),
     ).resolves.toEqual({
       email: admin.email,
     });
@@ -79,7 +95,11 @@ describe("login: authorization", () => {
   it("rejects invalid password with UNAUTHENTICATED error", async () => {
     findUserByEmail.mockResolvedValue(admin);
     await expect(
-      login({ email: admin.email, password: "wrong-password" }),
+      login({
+        email: admin.email,
+        password: "wrong-password",
+        turnstileToken: validTurnstileToken,
+      }),
     ).rejects.toMatchObject({
       code: "UNAUTHENTICATED",
       message: "Email atau password salah.",
@@ -90,7 +110,11 @@ describe("login: authorization", () => {
   it("rejects non-admin role with FORBIDDEN error", async () => {
     findUserByEmail.mockResolvedValue(user);
     await expect(
-      login({ email: user.email, password: adminPassword }),
+      login({
+        email: user.email,
+        password: adminPassword,
+        turnstileToken: validTurnstileToken,
+      }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
       message: "Akun ini tidak punya akses admin.",

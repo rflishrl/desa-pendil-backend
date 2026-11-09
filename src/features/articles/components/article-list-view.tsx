@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  AlertCircleIcon,
-  NewspaperIcon,
-  PencilIcon,
-  PlusIcon,
-} from "lucide-react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
+import { AlertCircleIcon, NewspaperIcon, PencilIcon, PlusIcon } from "lucide-react";
 
 import { DeleteDialog } from "@/components/admin-kit/delete-dialog";
 import { ListSkeleton } from "@/components/admin-kit/list-skeleton";
@@ -33,19 +28,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useArticleList, useDeleteArticle } from "@/features/articles/hooks";
-import {
-  ARTICLES_ADMIN_PATH,
-  type ArticleListParams,
-} from "@/features/articles/queries";
-import {
-  ARTICLE_TYPE_LABELS,
-  type ArticleDto,
-} from "@/features/articles/schemas";
+import { ARTICLES_ADMIN_PATH, type ArticleListParams } from "@/features/articles/queries";
+import { ARTICLE_TYPE_LABELS, type ArticleDto } from "@/features/articles/schemas";
 import { formatDate } from "@/lib/utils";
 
 function StatusBadge({ status }: { status: ArticleDto["status"] }) {
   return status === "published" ? (
-    <Badge className="bg-success-soft text-success">Terbit</Badge>
+    <Badge className="border border-success/20 bg-success-soft font-semibold text-success shadow-none">
+      Terbit
+    </Badge>
   ) : (
     <Badge variant="secondary">Draf</Badge>
   );
@@ -57,24 +48,21 @@ function RowActions({ article }: { article: ArticleDto }) {
     <div className="flex justify-end gap-1">
       <Button asChild variant="ghost" size="lg" className="h-11 px-3">
         <Link
-          href={`${ARTICLES_ADMIN_PATH}/${article.id}/edit`}
+          to="/admin/articles/$id/edit"
+          params={{ id: article.id }}
           aria-label={`Ubah ${article.title}`}
         >
           <PencilIcon aria-hidden="true" />
           <span className="hidden sm:inline">Ubah</span>
         </Link>
       </Button>
-      <DeleteDialog
-        itemName={article.title}
-        onConfirm={() => remove.mutateAsync(article.id)}
-      />
+      <DeleteDialog itemName={article.title} onConfirm={() => remove.mutateAsync(article.id)} />
     </div>
   );
 }
 
 export function ArticleListView({ params }: { params: ArticleListParams }) {
-  const { data, error, isPending, isFetching, refetch } =
-    useArticleList(params);
+  const { data, error, isPending, isFetching, refetch } = useArticleList(params);
 
   if (isPending) return <ListSkeleton />;
 
@@ -85,11 +73,7 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
         <AlertTitle>Data gagal dimuat</AlertTitle>
         <AlertDescription>
           <p>{error.message}</p>
-          <Button
-            variant="outline"
-            className="mt-2 h-11"
-            onClick={() => refetch()}
-          >
+          <Button variant="outline" className="mt-2 h-11" onClick={() => refetch()}>
             Coba lagi
           </Button>
         </AlertDescription>
@@ -104,19 +88,21 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
           <EmptyMedia variant="icon">
             <NewspaperIcon aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>
-            {params.q ? "Tidak ada hasil" : "Belum ada konten"}
-          </EmptyTitle>
+          <EmptyTitle>{params.q ? "Tidak ada hasil" : "Belum ada konten"}</EmptyTitle>
           <EmptyDescription>
-            {params.q
-              ? "Coba kata kunci lain."
-              : "Tulis berita pertama agar tampil di website."}
+            {params.q ? "Coba kata kunci lain." : "Tulis berita pertama agar tampil di website."}
           </EmptyDescription>
         </EmptyHeader>
-        {!params.q && (
+        {params.q ? (
+          <EmptyContent>
+            <Button asChild variant="outline" size="lg" className="h-11 px-4">
+              <Link to={ARTICLES_ADMIN_PATH}>Reset pencarian</Link>
+            </Button>
+          </EmptyContent>
+        ) : (
           <EmptyContent>
             <Button asChild size="lg" className="h-11 px-4">
-              <Link href={`${ARTICLES_ADMIN_PATH}/new`}>
+              <Link to={`${ARTICLES_ADMIN_PATH}/new`}>
                 <PlusIcon aria-hidden="true" />
                 Tambah konten
               </Link>
@@ -129,9 +115,16 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
 
   return (
     <div aria-busy={isFetching}>
-      <div className="hidden overflow-hidden rounded-lg bg-card shadow-card md:block">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-labelledby="articles-table-caption"
+        className="hidden overflow-x-auto rounded-lg bg-card shadow-card focus-visible:outline-2 focus-visible:outline-ring/70 md:block"
+      >
         <Table>
-          <TableCaption className="sr-only">Daftar konten</TableCaption>
+          <TableCaption id="articles-table-caption" className="sr-only">
+            Daftar konten artikel dan berita desa
+          </TableCaption>
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead className="px-4">Judul</TableHead>
@@ -149,15 +142,11 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
                     <Thumb src={article.thumbnail ?? ""} priority={index < 4} />
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{article.title}</p>
-                      <p className="truncate text-muted-foreground">
-                        {article.author}
-                      </p>
+                      <p className="truncate text-muted-foreground">{article.author}</p>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-4">
-                  {ARTICLE_TYPE_LABELS[article.type]}
-                </TableCell>
+                <TableCell className="px-4">{ARTICLE_TYPE_LABELS[article.type]}</TableCell>
                 <TableCell className="px-4">
                   <StatusBadge status={article.status} />
                 </TableCell>
@@ -181,8 +170,7 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{article.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {ARTICLE_TYPE_LABELS[article.type]} &middot;{" "}
-                  {formatDate(article.createdAt)}
+                  {ARTICLE_TYPE_LABELS[article.type]} &middot; {formatDate(article.createdAt)}
                 </p>
               </div>
               <div className="shrink-0">
@@ -196,11 +184,7 @@ export function ArticleListView({ params }: { params: ArticleListParams }) {
         ))}
       </ul>
 
-      <PaginationNav
-        pagination={data.pagination}
-        basePath={ARTICLES_ADMIN_PATH}
-        q={params.q}
-      />
+      <PaginationNav pagination={data.pagination} basePath={ARTICLES_ADMIN_PATH} q={params.q} />
     </div>
   );
 }

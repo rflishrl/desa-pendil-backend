@@ -49,17 +49,12 @@ export async function apiRequest<T>(
       method,
       signal,
       credentials: "same-origin",
-      headers:
-        json !== undefined ? { "Content-Type": "application/json" } : undefined,
+      headers: json !== undefined ? { "Content-Type": "application/json" } : undefined,
       body: json !== undefined ? JSON.stringify(json) : body,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError")
-      throw error;
-    throw new ApiClientError(
-      "Unable to connect to server. Please check your connection.",
-      0,
-    );
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ApiClientError("Unable to connect to server. Please check your connection.", 0);
   }
 
   const payload: unknown = await response.json().catch(() => null);
@@ -73,21 +68,15 @@ export async function apiRequest<T>(
 }
 
 export const api = {
-  get: <T>(path: string, signal?: AbortSignal) =>
-    apiRequest<T>(path, { signal }),
-  post: <T>(path: string, json?: unknown) =>
-    apiRequest<T>(path, { method: "POST", json }),
-  patch: <T>(path: string, json: unknown) =>
-    apiRequest<T>(path, { method: "PATCH", json }),
+  get: <T>(path: string, signal?: AbortSignal) => apiRequest<T>(path, { signal }),
+  post: <T>(path: string, json?: unknown) => apiRequest<T>(path, { method: "POST", json }),
+  patch: <T>(path: string, json: unknown) => apiRequest<T>(path, { method: "PATCH", json }),
   delete: <T>(path: string) => apiRequest<T>(path, { method: "DELETE" }),
-  upload: <T>(path: string, body: FormData) =>
-    apiRequest<T>(path, { method: "POST", body }),
+  upload: <T>(path: string, body: FormData) => apiRequest<T>(path, { method: "POST", body }),
 };
 
 /** Serializes object into URL query string, omitting undefined and empty values. */
-export function toQueryString(
-  params: Record<string, string | number | undefined>,
-): string {
+export function toQueryString(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "") search.set(key, String(value));

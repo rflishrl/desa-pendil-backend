@@ -1,20 +1,20 @@
 import "server-only";
 
 import {
-  deleteArticle as repoDeleteArticle,
   findArticle,
   insertArticle,
   listArticles,
+  deleteArticle as repoDeleteArticle,
   updateArticle as repoUpdateArticle,
 } from "@/features/articles/repository";
 import {
-  articleCreateSchema,
-  articleUpdateSchema,
   type ArticleCreateInput,
   type ArticleDto,
+  articleCreateSchema,
+  articleUpdateSchema,
 } from "@/features/articles/schemas";
 import { AppError, notFound } from "@/lib/api/errors";
-import { paginate, type Paginated } from "@/lib/api/types";
+import { type Paginated, paginate } from "@/lib/api/types";
 import type { Actor } from "@/lib/auth/actor";
 import { assertAdmin } from "@/lib/auth/authorize";
 import { isUuid } from "@/lib/ids";
@@ -27,8 +27,7 @@ const LABEL = "Konten";
 const REVALIDATE_TAGS = ["news"];
 const MAX_SLUG_ATTEMPTS = 5;
 
-type Viewer =
-  { audience: "public" } | { audience: "admin"; actor: Actor | null };
+type Viewer = { audience: "public" } | { audience: "admin"; actor: Actor | null };
 
 /** Public: published articles only, 50/page. Admin: all entries and drafts, 10/page. */
 export async function listArticlesFor(
@@ -48,10 +47,7 @@ export async function listArticlesFor(
   return paginate(items, total, page, limit);
 }
 
-export async function getArticle(
-  viewer: Viewer,
-  idOrSlug: string,
-): Promise<ArticleDto> {
+export async function getArticle(viewer: Viewer, idOrSlug: string): Promise<ArticleDto> {
   const isAdmin = viewer.audience === "admin";
   if (isAdmin) assertAdmin(viewer.actor);
 
@@ -70,10 +66,7 @@ async function generateUniqueSlug(title: string): Promise<string> {
   throw new AppError("CONFLICT", "Gagal membuat slug unik. Coba judul lain.");
 }
 
-export async function createArticle(
-  actor: Actor | null,
-  rawInput: unknown,
-): Promise<ArticleDto> {
+export async function createArticle(actor: Actor | null, rawInput: unknown): Promise<ArticleDto> {
   assertAdmin(actor);
   const input: ArticleCreateInput = articleCreateSchema.parse(rawInput);
   const slug = await generateUniqueSlug(input.title);
@@ -107,10 +100,7 @@ export async function updateArticle(
   return item;
 }
 
-export async function deleteArticle(
-  actor: Actor | null,
-  id: string,
-): Promise<{ id: string }> {
+export async function deleteArticle(actor: Actor | null, id: string): Promise<{ id: string }> {
   assertAdmin(actor);
   if (!isUuid(id)) throw notFound(LABEL);
 

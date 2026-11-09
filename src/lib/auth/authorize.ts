@@ -1,5 +1,5 @@
-import type { Actor } from "@/lib/auth/actor";
 import { AppError } from "@/lib/api/errors";
+import type { Actor } from "@/lib/auth/actor";
 
 /**
  * Service-layer authorization rules.

@@ -10,18 +10,14 @@ export const UPLOAD_PREFIX = "desa-pendil/";
 
 const MAX_BYTES = 4 * 1024 * 1024; // Stays under Vercel function payload threshold (~4.5MB).
 
-const SIGNATURES: Record<
-  string,
-  { extension: string; test: (b: Uint8Array) => boolean }
-> = {
+const SIGNATURES: Record<string, { extension: string; test: (b: Uint8Array) => boolean }> = {
   "image/jpeg": {
     extension: "jpg",
     test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
   },
   "image/png": {
     extension: "png",
-    test: (b) =>
-      b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+    test: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
   },
   "image/webp": {
     extension: "webp",
@@ -55,24 +51,15 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
 
   const rule = SIGNATURES[file.type];
   if (!rule) {
-    throw new AppError(
-      "UNSUPPORTED_MEDIA_TYPE",
-      "Format foto harus JPG, PNG, atau WebP.",
-    );
+    throw new AppError("UNSUPPORTED_MEDIA_TYPE", "Format foto harus JPG, PNG, atau WebP.");
   }
   if (file.size === 0 || file.size > MAX_BYTES) {
-    throw new AppError(
-      "PAYLOAD_TOO_LARGE",
-      `Ukuran foto maksimal ${MAX_UPLOAD_MB} MB.`,
-    );
+    throw new AppError("PAYLOAD_TOO_LARGE", `Ukuran foto maksimal ${MAX_UPLOAD_MB} MB.`);
   }
 
   const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   if (!rule.test(header)) {
-    throw new AppError(
-      "UNSUPPORTED_MEDIA_TYPE",
-      "Isi file tidak cocok dengan format fotonya.",
-    );
+    throw new AppError("UNSUPPORTED_MEDIA_TYPE", "Isi file tidak cocok dengan format fotonya.");
   }
 
   const blob = await put(`${folder}/photo.${rule.extension}`, file, {

@@ -1,9 +1,9 @@
 import "server-only";
 
 import crypto from "node:crypto";
-import { cookies } from "next/headers";
-import { getServerEnv } from "@/lib/env";
+import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import type { Actor } from "@/lib/auth/actor";
+import { getServerEnv } from "@/lib/env";
 
 export const SESSION_COOKIE_NAME = "admin_session";
 export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days
@@ -17,11 +17,14 @@ interface SessionPayload {
 
 function getSecretKey(): string {
   const env = getServerEnv();
-  return (
-    env.SESSION_SECRET ||
-    env.DATABASE_URI ||
-    "default-secret-key-32-chars-long!"
-  );
+  const secret =
+    env.SESSION_SECRET || (process.env.NODE_ENV !== "production" ? env.DATABASE_URI : undefined);
+  if (!secret) {
+    throw new Error(
+      "SESSION_SECRET belum dikonfigurasi. Harap tentukan SESSION_SECRET minimal 32 karakter.",
+    );
+  }
+  return secret;
 }
 
 /** Signs a session token for an authenticated actor. */
@@ -33,10 +36,7 @@ export function createSessionToken(actor: Actor): string {
     exp: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto
-    .createHmac("sha256", getSecretKey())
-    .update(body)
-    .digest("base64url");
+  const signature = crypto.createHmac("sha256", getSecretKey()).update(body).digest("base64url");
   return `${body}.${signature}`;
 }
 
@@ -57,9 +57,7 @@ export function verifySessionToken(token: string): Actor | null {
   if (!crypto.timingSafeEqual(sigBuffer, expBuffer)) return null;
 
   try {
-    const payload: SessionPayload = JSON.parse(
-      Buffer.from(body, "base64url").toString("utf8"),
-    );
+    const payload: SessionPayload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
     if (!payload.exp || Date.now() > payload.exp) return null;
     return { id: payload.sub, email: payload.email, role: payload.role };
   } catch {
@@ -67,10 +65,28 @@ export function verifySessionToken(token: string): Actor | null {
   }
 }
 
-/** Resolves current authenticated admin from session cookies. */
-export async function getCurrentAdmin(): Promise<Actor | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+/** Resolves current authenticated admin from request headers or session cookies. */
+export async function getCurrentAdmin(request?: Request): Promise<Actor | null> {
+  let token: string | undefined;
+  if (request) {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      for (const part of cookieHeader.split(";")) {
+        const [k, ...v] = part.trim().split("=");
+        if (k === SESSION_COOKIE_NAME) {
+          token = decodeURIComponent(v.join("="));
+          break;
+        }
+      }
+    }
+  }
+  if (!token) {
+    try {
+      token = getCookie(SESSION_COOKIE_NAME);
+    } catch {
+      // not in TanStack Start server event context
+    }
+  }
   if (!token) return null;
 
   const actor = verifySessionToken(token);
@@ -80,19 +96,34 @@ export async function getCurrentAdmin(): Promise<Actor | null> {
 
 /** Sets the httpOnly session cookie for the actor. */
 export async function setSessionCookie(actor: Actor): Promise<void> {
-  const cookieStore = await cookies();
   const token = createSessionToken(actor);
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-  });
+  try {
+    setCookie(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
+  } catch {
+    // not in TanStack Start server event context
+  }
 }
 
 /** Clears the session cookie on logout. */
 export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+  try {
+    deleteCookie(SESSION_COOKIE_NAME);
+  } catch {
+    // not in TanStack Start server event context
+  }
+}
+
+export function createSessionCookieHeader(token: string): string {
+  const isProd = process.env.NODE_ENV === "production";
+  return `${SESSION_COOKIE_NAME}=${token}; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}; HttpOnly; SameSite=Lax${isProd ? "; Secure" : ""}`;
+}
+
+export function clearSessionCookieHeader(): string {
+  return `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`;
 }

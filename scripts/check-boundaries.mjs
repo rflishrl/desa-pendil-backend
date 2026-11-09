@@ -3,7 +3,7 @@
  * 1. 'use client' files cannot import database, service, repository, or other server modules,
  *    and cannot fetch external domain URLs.
  * 2. NEXT_PUBLIC_ variables are forbidden in code and .env.example.
- * 3. Every route.ts in src/app/api must use withApi().
+ * 3. Every API handler in src/routes/api must use withApi().
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -25,6 +25,7 @@ const FORBIDDEN_IN_CLIENT = [
   /from\s+["']@\/lib\/db\//,
   /from\s+["']@\/features\/[^"']+\/(service|repository)["']/,
   /from\s+["']@\/lib\/(env|log|auth\/session|auth\/password|api\/with-api|api\/rate-limit)["']/,
+  /from\s+["']@\/server\//,
   /from\s+["']server-only["']/,
 ];
 const EXTERNAL_FETCH = /fetch\(\s*[`"']https?:\/\//;
@@ -36,27 +37,23 @@ for (const file of walk(join(root, "src"))) {
 
   if (/^\s*["']use client["']/.test(text)) {
     for (const pattern of FORBIDDEN_IN_CLIENT) {
-      if (pattern.test(text))
-        problems.push(`${rel}: client imports server module (${pattern})`);
+      if (pattern.test(text)) problems.push(`${rel}: client imports server module (${pattern})`);
     }
-    if (EXTERNAL_FETCH.test(text))
-      problems.push(`${rel}: client performs external fetch`);
+    if (EXTERNAL_FETCH.test(text)) problems.push(`${rel}: client performs external fetch`);
   }
 
-  if (!isTest && /NEXT_PUBLIC_/.test(text))
-    problems.push(`${rel}: uses NEXT_PUBLIC_`);
+  if (!isTest && /NEXT_PUBLIC_/.test(text)) problems.push(`${rel}: uses NEXT_PUBLIC_`);
 
   if (
-    /[\\/]app[\\/]api[\\/].*[\\/]route\.ts$/.test(file) &&
+    /[\\/]routes[\\/]api[\\/].*\.ts$/.test(file) &&
+    !isTest &&
     !/withApi(<[^>]*>)?\(/.test(text)
   ) {
     problems.push(`${rel}: route missing withApi()`);
   }
 }
 
-if (
-  /^\s*NEXT_PUBLIC_/m.test(readFileSync(join(root, ".env.example"), "utf8"))
-) {
+if (/^\s*NEXT_PUBLIC_/m.test(readFileSync(join(root, ".env.example"), "utf8"))) {
   problems.push(".env.example: uses NEXT_PUBLIC_");
 }
 

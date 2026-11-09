@@ -1,17 +1,16 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   ExternalLinkIcon,
   ImagesIcon,
   LayoutDashboardIcon,
   LogOutIcon,
+  type LucideIcon,
   MoreVerticalIcon,
   NewspaperIcon,
-  type LucideIcon,
 } from "lucide-react";
+import * as React from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -74,7 +73,7 @@ function getInitials(email: string): string {
 }
 
 function AdminBreadcrumbs() {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   const getBreadcrumbs = () => {
     if (pathname === "/admin") {
@@ -126,7 +125,7 @@ function AdminBreadcrumbs() {
                   <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={crumb.href}>{crumb.label}</Link>
+                    <Link to={crumb.href}>{crumb.label}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
@@ -174,25 +173,15 @@ function UserMenu({
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-xs leading-none font-semibold text-foreground">
-                Administrator
-              </p>
-              <p
-                className="truncate text-xs leading-none text-muted-foreground"
-                title={email}
-              >
+              <p className="text-xs leading-none font-semibold text-foreground">Administrator</p>
+              <p className="truncate text-xs leading-none text-muted-foreground" title={email}>
                 {email}
               </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="cursor-pointer"
-            >
+            <a href={siteUrl} target="_blank" rel="noreferrer" className="cursor-pointer">
               <ExternalLinkIcon className="size-4" aria-hidden="true" />
               <span>Lihat Situs</span>
             </a>
@@ -228,13 +217,8 @@ function UserMenu({
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-sidebar-foreground">
-                  Admin
-                </span>
-                <span
-                  className="truncate text-xs text-sidebar-foreground/70"
-                  title={email}
-                >
+                <span className="truncate font-semibold text-sidebar-foreground">Admin</span>
+                <span className="truncate text-xs text-sidebar-foreground/70" title={email}>
                   {email}
                 </span>
               </div>
@@ -244,33 +228,18 @@ function UserMenu({
               />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="right"
-            align="end"
-            sideOffset={4}
-            className="w-56"
-          >
+          <DropdownMenuContent side="right" align="end" sideOffset={4} className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-xs leading-none font-semibold text-foreground">
-                  Administrator
-                </p>
-                <p
-                  className="truncate text-xs leading-none text-muted-foreground"
-                  title={email}
-                >
+                <p className="text-xs leading-none font-semibold text-foreground">Administrator</p>
+                <p className="truncate text-xs leading-none text-muted-foreground" title={email}>
                   {email}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a
-                href={siteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="cursor-pointer"
-              >
+              <a href={siteUrl} target="_blank" rel="noreferrer" className="cursor-pointer">
                 <ExternalLinkIcon className="size-4" aria-hidden="true" />
                 <span>Lihat Situs</span>
               </a>
@@ -301,11 +270,9 @@ export function AdminShell({
   frontendUrl?: string;
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const siteUrl =
-    frontendUrl && frontendUrl !== "http://localhost:3000"
-      ? frontendUrl
-      : DEFAULT_SITE_URL;
+    frontendUrl && frontendUrl !== "http://localhost:3000" ? frontendUrl : DEFAULT_SITE_URL;
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -318,7 +285,7 @@ export function AdminShell({
                 asChild
                 className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
-                <Link href="/admin">
+                <Link to="/admin">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand font-heading text-sm font-extrabold text-ink shadow-xs">
                     DP
                   </div>
@@ -355,7 +322,7 @@ export function AdminShell({
                             : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
                         }
                       >
-                        <Link href={href}>
+                        <Link to={href}>
                           <Icon className="size-4" aria-hidden="true" />
                           <span>{label}</span>
                         </Link>
@@ -382,12 +349,7 @@ export function AdminShell({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs font-medium"
-            >
+            <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium">
               <a
                 href={siteUrl}
                 target="_blank"

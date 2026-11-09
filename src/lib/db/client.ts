@@ -1,6 +1,6 @@
 import "server-only";
 
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
+import { type NeonQueryFunction, neon } from "@neondatabase/serverless";
 import { getServerEnv } from "@/lib/env";
 
 export type DbClient = NeonQueryFunction<false, false>;

@@ -1,28 +1,22 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "@tanstack/react-router";
 import { AlertCircleIcon } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ImageField } from "@/components/admin-kit/image-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useSaveGalleryImage } from "@/features/gallery/hooks";
 import { GALLERY_ADMIN_PATH } from "@/features/gallery/queries";
 import {
-  galleryCreateSchema,
   type GalleryDto,
   type GalleryFormValues,
+  galleryCreateSchema,
 } from "@/features/gallery/schemas";
 
 const Required = () => (
@@ -51,10 +45,19 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
 
   const busy = save.isPending || save.isSuccess;
 
+  const onInvalid = (errors: Record<string, unknown>) => {
+    const firstKey = Object.keys(errors)[0];
+    if (firstKey === "sort_order") {
+      document.getElementById("gallery-order")?.focus();
+    } else if (firstKey) {
+      document.getElementById(`gallery-${firstKey}`)?.focus();
+    }
+  };
+
   return (
     <form
       noValidate
-      onSubmit={form.handleSubmit((values) => save.mutate(values))}
+      onSubmit={form.handleSubmit((values) => save.mutate(values), onInvalid)}
       className="space-y-6"
     >
       {save.error && (
@@ -79,6 +82,7 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
                   id="gallery-alt"
                   maxLength={200}
                   autoComplete="off"
+                  enterKeyHint="next"
                   required
                   aria-invalid={fieldState.invalid}
                   aria-describedby="gallery-alt-hint gallery-alt-error"
@@ -88,10 +92,7 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
                   Jelaskan isi foto dalam satu kalimat, untuk pembaca layar.
                 </FieldDescription>
                 {fieldState.invalid && (
-                  <FieldError
-                    id="gallery-alt-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="gallery-alt-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -112,10 +113,7 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
                   className="h-11 bg-card"
                 />
                 {fieldState.invalid && (
-                  <FieldError
-                    id="gallery-caption-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="gallery-caption-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -142,10 +140,7 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
                   Angka kecil tampil lebih dulu. Jika sama, foto terbaru dulu.
                 </FieldDescription>
                 {fieldState.invalid && (
-                  <FieldError
-                    id="gallery-order-error"
-                    errors={[fieldState.error]}
-                  />
+                  <FieldError id="gallery-order-error" errors={[fieldState.error]} />
                 )}
               </Field>
             )}
@@ -171,7 +166,7 @@ export function GalleryForm({ image }: { image?: GalleryDto }) {
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button asChild variant="outline" size="lg" className="h-11 px-4">
-          <Link href={GALLERY_ADMIN_PATH}>Batal</Link>
+          <Link to={GALLERY_ADMIN_PATH}>Batal</Link>
         </Button>
         <Button type="submit" size="lg" className="h-11 px-4" disabled={busy}>
           {busy ? "Menyimpan..." : image ? "Simpan perubahan" : "Tambah foto"}

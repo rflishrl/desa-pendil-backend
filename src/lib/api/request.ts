@@ -12,10 +12,7 @@ export async function readJson(request: Request): Promise<unknown> {
 }
 
 /** Parses and validates JSON request body against a Zod schema. */
-export async function parseJson<T>(
-  request: Request,
-  schema: ZodType<T>,
-): Promise<T> {
+export async function parseJson<T>(request: Request, schema: ZodType<T>): Promise<T> {
   return schema.parse(await readJson(request));
 }
 

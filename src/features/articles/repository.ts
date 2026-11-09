@@ -1,11 +1,11 @@
 import "server-only";
 
-import { getDb } from "@/lib/db/client";
 import type {
   ArticleCreateInput,
   ArticleDto,
   ArticleUpdateInput,
 } from "@/features/articles/schemas";
+import { getDb } from "@/lib/db/client";
 import { isUuid } from "@/lib/ids";
 
 interface RawArticleRow {
@@ -34,9 +34,7 @@ function toDto(row: RawArticleRow): ArticleDto {
     thumbnail: row.thumbnail_url,
     author: row.author,
     status: row.status as "draft" | "published",
-    publishedAt: row.published_at
-      ? new Date(row.published_at).toISOString()
-      : null,
+    publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -80,9 +78,7 @@ export async function listArticles({
   return { items, total };
 }
 
-export async function countArticles(
-  status?: "draft" | "published",
-): Promise<number> {
+export async function countArticles(status?: "draft" | "published"): Promise<number> {
   const sql = getDb();
   const rows = await sql`
     SELECT COUNT(*)::int AS total
@@ -115,10 +111,7 @@ export async function findArticle(
   return item;
 }
 
-export async function insertArticle(
-  input: ArticleCreateInput,
-  slug: string,
-): Promise<ArticleDto> {
+export async function insertArticle(input: ArticleCreateInput, slug: string): Promise<ArticleDto> {
   const sql = getDb();
   const rows = await sql`
     INSERT INTO articles (
@@ -145,11 +138,9 @@ export async function updateArticle(
 ): Promise<{ item: ArticleDto; previousThumbnail: string | null } | null> {
   const sql = getDb();
 
-  const existing =
-    await sql`SELECT thumbnail_url FROM articles WHERE id = ${id}::uuid LIMIT 1`;
+  const existing = await sql`SELECT thumbnail_url FROM articles WHERE id = ${id}::uuid LIMIT 1`;
   if (existing.length === 0) return null;
-  const previousThumbnail = (existing[0] as { thumbnail_url: string | null })
-    .thumbnail_url;
+  const previousThumbnail = (existing[0] as { thumbnail_url: string | null }).thumbnail_url;
 
   const rows = await sql`
     UPDATE articles

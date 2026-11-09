@@ -12,9 +12,7 @@ export interface DashboardCounts {
 }
 
 /** Aggregate counts for admin dashboard queried concurrently. */
-export async function getDashboardCounts(
-  actor: Actor | null,
-): Promise<DashboardCounts> {
+export async function getDashboardCounts(actor: Actor | null): Promise<DashboardCounts> {
   assertAdmin(actor);
   const [articles, published, gallery] = await Promise.all([
     countArticles(),

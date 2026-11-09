@@ -1,10 +1,10 @@
 import "server-only";
 
 import { findUserByEmail } from "@/features/auth/repository";
-import { loginSchema, type LoginResult } from "@/features/auth/schemas";
+import { type LoginResult, loginSchema } from "@/features/auth/schemas";
+import { AppError } from "@/lib/api/errors";
 import { verifyPassword } from "@/lib/auth/password";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
-import { AppError } from "@/lib/api/errors";
 
 /** Authenticates admin users against Neon admin_users table. */
 export async function login(rawInput: unknown): Promise<LoginResult> {

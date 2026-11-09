@@ -1,5 +1,3 @@
-import { after } from "next/server";
-
 import { log } from "@/lib/log";
 
 /** Revalidation settings read at runtime from environment variables. */
@@ -23,14 +21,9 @@ export type RevalidateOutcome =
  * Calls `POST {FRONTEND_URL}/api/revalidate` and returns the outcome.
  * Catches errors and returns them as values so callers can handle fallback.
  */
-export async function sendRevalidate(
-  tags: string[],
-): Promise<RevalidateOutcome> {
+export async function sendRevalidate(tags: string[]): Promise<RevalidateOutcome> {
   const { baseUrl, secret } = readRevalidateConfig();
-  const missing = [
-    ...(baseUrl ? [] : ["FRONTEND_URL"]),
-    ...(secret ? [] : ["REVALIDATE_SECRET"]),
-  ];
+  const missing = [...(baseUrl ? [] : ["FRONTEND_URL"]), ...(secret ? [] : ["REVALIDATE_SECRET"])];
   if (!baseUrl || !secret) return { state: "not_configured", missing };
 
   try {
@@ -62,21 +55,21 @@ export async function sendRevalidate(
 
 /**
  * Notifies frontend that data has changed, purging stale cache entries.
- * Runs via Next.js `after()` so mutations are not blocked by webhook latency.
+ * Runs asynchronously in the background so mutations are not blocked by webhook latency.
  */
 export function revalidateFrontend(tags: string[]) {
   const { baseUrl, secret } = readRevalidateConfig();
   if (!baseUrl || !secret) {
     // Missing configuration prevents immediate cache eviction
-    log(
-      "warn",
-      "revalidate skipped: FRONTEND_URL or REVALIDATE_SECRET is missing",
-      { tags, hasFrontendUrl: Boolean(baseUrl), hasSecret: Boolean(secret) },
-    );
+    log("warn", "revalidate skipped: FRONTEND_URL or REVALIDATE_SECRET is missing", {
+      tags,
+      hasFrontendUrl: Boolean(baseUrl),
+      hasSecret: Boolean(secret),
+    });
     return;
   }
 
-  after(async () => {
+  void (async () => {
     const outcome = await sendRevalidate(tags);
     switch (outcome.state) {
       case "ok":
@@ -86,14 +79,10 @@ export function revalidateFrontend(tags: string[]) {
         });
         break;
       case "rejected":
-        log(
-          "error",
-          `revalidate rejected: frontend responded with HTTP ${outcome.status}`,
-          {
-            tags,
-            status: outcome.status,
-          },
-        );
+        log("error", `revalidate rejected: frontend responded with HTTP ${outcome.status}`, {
+          tags,
+          status: outcome.status,
+        });
         break;
       case "unreachable":
         log("error", "revalidate failed: frontend unreachable", {
@@ -104,5 +93,5 @@ export function revalidateFrontend(tags: string[]) {
       case "not_configured":
         break;
     }
-  });
+  })();
 }

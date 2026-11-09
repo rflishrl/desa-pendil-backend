@@ -8,6 +8,7 @@ export function sameOriginRequest(
   init: {
     method?: string;
     json?: unknown;
+    body?: BodyInit | null;
     headers?: Record<string, string>;
   } = {},
 ): Request {
@@ -20,13 +21,16 @@ export function sameOriginRequest(
   return new Request(`${BASE_URL}${path}`, {
     method: init.method ?? "GET",
     headers,
-    body: init.json !== undefined ? JSON.stringify(init.json) : undefined,
+    body:
+      init.body !== undefined
+        ? init.body
+        : init.json !== undefined
+          ? JSON.stringify(init.json)
+          : undefined,
   });
 }
 
-export async function readBody<T = unknown>(
-  response: Response,
-): Promise<ApiResponse<T>> {
+export async function readBody<T = unknown>(response: Response): Promise<ApiResponse<T>> {
   return (await response.json()) as ApiResponse<T>;
 }
 

@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-  optionalBlobImageUrl,
-  optionalText,
-  requiredText,
-} from "@/lib/schemas/common";
+import { optionalBlobImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
 
 export const ARTICLE_TYPES = ["berita", "artikel", "postingan"] as const;
 export const ARTICLE_STATUSES = ["draft", "published"] as const;

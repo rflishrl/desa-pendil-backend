@@ -34,11 +34,7 @@ export function DeleteDialog({ itemName, onConfirm }: DeleteDialogProps) {
       await onConfirm();
       setOpen(false);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Gagal menghapus. Coba lagi.",
-      );
+      setError(caught instanceof Error ? caught.message : "Gagal menghapus. Coba lagi.");
     } finally {
       setDeleting(false);
     }

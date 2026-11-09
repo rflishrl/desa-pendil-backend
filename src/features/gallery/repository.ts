@@ -1,11 +1,11 @@
 import "server-only";
 
-import { getDb } from "@/lib/db/client";
 import type {
   GalleryCreateInput,
   GalleryDto,
   GalleryUpdateInput,
 } from "@/features/gallery/schemas";
+import { getDb } from "@/lib/db/client";
 
 interface RawGalleryRow {
   id: string;
@@ -73,9 +73,7 @@ export async function findGalleryImage(id: string): Promise<GalleryDto | null> {
   return toDto(rows[0] as unknown as RawGalleryRow);
 }
 
-export async function insertGalleryImage(
-  input: GalleryCreateInput,
-): Promise<GalleryDto> {
+export async function insertGalleryImage(input: GalleryCreateInput): Promise<GalleryDto> {
   const sql = getDb();
   const rows = await sql`
     INSERT INTO gallery_images (url, alt, caption, sort_order)
@@ -96,8 +94,7 @@ export async function updateGalleryImage(
 ): Promise<{ item: GalleryDto; previousUrl: string } | null> {
   const sql = getDb();
 
-  const existing =
-    await sql`SELECT url FROM gallery_images WHERE id = ${id}::uuid LIMIT 1`;
+  const existing = await sql`SELECT url FROM gallery_images WHERE id = ${id}::uuid LIMIT 1`;
   if (existing.length === 0) return null;
   const previousUrl = (existing[0] as { url: string }).url;
 
@@ -117,9 +114,7 @@ export async function updateGalleryImage(
   return { item: toDto(rows[0] as unknown as RawGalleryRow), previousUrl };
 }
 
-export async function deleteGalleryImage(
-  id: string,
-): Promise<GalleryDto | null> {
+export async function deleteGalleryImage(id: string): Promise<GalleryDto | null> {
   const sql = getDb();
   const rows = await sql`
     DELETE FROM gallery_images

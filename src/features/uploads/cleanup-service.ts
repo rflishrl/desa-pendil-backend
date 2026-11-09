@@ -24,10 +24,7 @@ export async function cleanupOrphanImages(
   }
 
   const referenced = await listReferencedImageUrls();
-  const result = await deleteOrphanImages(
-    referenced,
-    new Date(Date.now() - MIN_ORPHAN_AGE_MS),
-  );
+  const result = await deleteOrphanImages(referenced, new Date(Date.now() - MIN_ORPHAN_AGE_MS));
   log("info", "pembersihan foto selesai", result);
   return result;
 }

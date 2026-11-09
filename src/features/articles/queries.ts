@@ -15,8 +15,7 @@ export interface ArticleListParams {
 export const articleKeys = {
   all: ["articles"] as const,
   lists: () => [...articleKeys.all, "list"] as const,
-  list: (params: ArticleListParams) =>
-    [...articleKeys.lists(), params] as const,
+  list: (params: ArticleListParams) => [...articleKeys.lists(), params] as const,
   detail: (id: string) => [...articleKeys.all, "detail", id] as const,
 };
 
@@ -39,8 +38,7 @@ export function articleListOptions(params: ArticleListParams) {
 export function articleDetailOptions(id: string) {
   return queryOptions({
     queryKey: articleKeys.detail(id),
-    queryFn: ({ signal }) =>
-      api.get<ArticleDto>(`${ARTICLES_ADMIN_API}/${id}`, signal),
+    queryFn: ({ signal }) => api.get<ArticleDto>(`${ARTICLES_ADMIN_API}/${id}`, signal),
     staleTime: STALE_TIME,
   });
 }

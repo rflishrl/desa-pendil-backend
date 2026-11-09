@@ -10,10 +10,7 @@ export function hashPassword(password: string): string {
 }
 
 /** Verifies a plain-text password against a stored salt:hash string in constant time. */
-export function verifyPassword(
-  password: string,
-  combinedHash: string,
-): boolean {
+export function verifyPassword(password: string, combinedHash: string): boolean {
   const parts = combinedHash.split(":");
   if (parts.length !== 2) return false;
   const [salt, storedHash] = parts;

@@ -50,5 +50,4 @@ export class AppError extends Error {
   }
 }
 
-export const notFound = (label: string) =>
-  new AppError("NOT_FOUND", `${label} tidak ditemukan.`);
+export const notFound = (label: string) => new AppError("NOT_FOUND", `${label} tidak ditemukan.`);

@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import type { UploadFolder, UploadResult } from "@/features/uploads/schemas";
-import { api, type ApiClientError } from "@/lib/api/client";
+import { type ApiClientError, api } from "@/lib/api/client";
 
 export function useUploadPhoto(folder: UploadFolder) {
   return useMutation<UploadResult, ApiClientError, File>({

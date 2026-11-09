@@ -40,19 +40,10 @@ describe("deleteOrphanImages", () => {
         hasMore: false,
       });
 
-    const result = await deleteOrphanImages(
-      new Set([`${HOST}/products/dipakai.jpg`]),
-      cutoff,
-    );
+    const result = await deleteOrphanImages(new Set([`${HOST}/products/dipakai.jpg`]), cutoff);
 
-    expect(list).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ cursor: "c2" }),
-    );
-    expect(del).toHaveBeenCalledWith([
-      `${HOST}/products/yatim.jpg`,
-      `${HOST}/patterns/yatim2.jpg`,
-    ]);
+    expect(list).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "c2" }));
+    expect(del).toHaveBeenCalledWith([`${HOST}/products/yatim.jpg`, `${HOST}/patterns/yatim2.jpg`]);
     expect(result).toEqual({ scanned: 4, deleted: 2 });
   });
 

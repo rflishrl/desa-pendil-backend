@@ -14,8 +14,7 @@ export interface GalleryListParams {
 export const galleryKeys = {
   all: ["gallery"] as const,
   lists: () => [...galleryKeys.all, "list"] as const,
-  list: (params: GalleryListParams) =>
-    [...galleryKeys.lists(), params] as const,
+  list: (params: GalleryListParams) => [...galleryKeys.lists(), params] as const,
   detail: (id: string) => [...galleryKeys.all, "detail", id] as const,
 };
 
@@ -38,8 +37,7 @@ export function galleryListOptions(params: GalleryListParams) {
 export function galleryDetailOptions(id: string) {
   return queryOptions({
     queryKey: galleryKeys.detail(id),
-    queryFn: ({ signal }) =>
-      api.get<GalleryDto>(`${GALLERY_ADMIN_API}/${id}`, signal),
+    queryFn: ({ signal }) => api.get<GalleryDto>(`${GALLERY_ADMIN_API}/${id}`, signal),
     staleTime: STALE_TIME,
   });
 }
