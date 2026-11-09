@@ -1,5 +1,3 @@
-import "server-only";
-
 import { AppError } from "@/lib/api/errors";
 import { getDb } from "@/lib/db/client";
 

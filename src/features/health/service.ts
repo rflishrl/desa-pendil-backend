@@ -1,5 +1,3 @@
-import "server-only";
-
 import { pingDatabase } from "@/features/health/repository";
 import { AppError } from "@/lib/api/errors";
 

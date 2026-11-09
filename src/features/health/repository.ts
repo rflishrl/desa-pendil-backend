@@ -1,5 +1,3 @@
-import "server-only";
-
 import { getDb } from "@/lib/db/client";
 
 /** Lightweight database connectivity check. */

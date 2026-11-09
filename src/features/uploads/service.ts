@@ -1,5 +1,3 @@
-import "server-only";
-
 import { type UploadResult, uploadFormSchema } from "@/features/uploads/schemas";
 import type { Actor } from "@/lib/auth/actor";
 import { assertAdmin } from "@/lib/auth/authorize";

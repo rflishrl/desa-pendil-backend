@@ -1,5 +1,3 @@
-import "server-only";
-
 import { del, list, put } from "@vercel/blob";
 
 import { AppError } from "@/lib/api/errors";

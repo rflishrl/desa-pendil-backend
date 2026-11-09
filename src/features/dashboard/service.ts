@@ -1,5 +1,3 @@
-import "server-only";
-
 import { countArticles } from "@/features/articles/repository";
 import { countGalleryImages } from "@/features/gallery/repository";
 import type { Actor } from "@/lib/auth/actor";

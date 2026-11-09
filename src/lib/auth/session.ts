@@ -1,5 +1,3 @@
-import "server-only";
-
 import crypto from "node:crypto";
 import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import type { Actor } from "@/lib/auth/actor";
@@ -46,10 +44,14 @@ export function verifySessionToken(token: string): Actor | null {
   const [body, signature] = token.split(".");
   if (!body || !signature) return null;
 
-  const expectedSignature = crypto
-    .createHmac("sha256", getSecretKey())
-    .update(body)
-    .digest("base64url");
+  let secret: string;
+  try {
+    secret = getSecretKey();
+  } catch {
+    return null;
+  }
+
+  const expectedSignature = crypto.createHmac("sha256", secret).update(body).digest("base64url");
 
   const sigBuffer = Buffer.from(signature);
   const expBuffer = Buffer.from(expectedSignature);

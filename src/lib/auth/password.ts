@@ -1,5 +1,3 @@
-import "server-only";
-
 import crypto from "node:crypto";
 
 /** Hashes a plain-text password using scrypt with a random 16-byte salt. */

@@ -1,5 +1,3 @@
-import "server-only";
-
 import { getTurnstileAllowedHostnames, getTurnstileSecretKey } from "@/lib/env";
 import { log } from "@/lib/log";
 

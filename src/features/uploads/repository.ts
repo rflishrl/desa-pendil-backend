@@ -1,5 +1,3 @@
-import "server-only";
-
 import { getDb } from "@/lib/db/client";
 
 /** Collects active image URLs referenced in articles and gallery. */

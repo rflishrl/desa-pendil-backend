@@ -1,5 +1,3 @@
-import "server-only";
-
 import { findUserByEmail } from "@/features/auth/repository";
 import { type LoginResult, loginSchema } from "@/features/auth/schemas";
 import { AppError } from "@/lib/api/errors";

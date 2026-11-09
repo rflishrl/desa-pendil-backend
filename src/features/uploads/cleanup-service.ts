@@ -1,5 +1,3 @@
-import "server-only";
-
 import { listReferencedImageUrls } from "@/features/uploads/repository";
 import { AppError } from "@/lib/api/errors";
 import { safeEqual } from "@/lib/crypto";

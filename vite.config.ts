@@ -18,7 +18,13 @@ export default defineConfig({
         routeFileIgnorePattern: ".*\\.test\\.tsx?$",
       },
     }),
-    nitro(),
+    nitro({
+      vercel: {
+        functions: {
+          runtime: "nodejs22.x",
+        },
+      },
+    }),
     viteReact(),
   ],
 });

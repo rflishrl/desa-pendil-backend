@@ -1,5 +1,3 @@
-import "server-only";
-
 import { type NeonQueryFunction, neon } from "@neondatabase/serverless";
 import { getServerEnv } from "@/lib/env";
 
