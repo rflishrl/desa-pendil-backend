@@ -26,6 +26,7 @@ import { Route as AdminArticlesIdEditRouteImport } from './routes/admin/articles
 import { Route as AdminGalleryIdEditRouteImport } from './routes/admin/gallery/$id.edit'
 import { Route as ApiAdminArticlesIndexRouteImport } from './routes/api/admin/articles/index'
 import { Route as ApiAdminArticlesIdRouteImport } from './routes/api/admin/articles/$id'
+import { Route as ApiAdminDiagnosticsImageRouteImport } from './routes/api/admin/diagnostics/image'
 import { Route as ApiAdminGalleryIndexRouteImport } from './routes/api/admin/gallery/index'
 import { Route as ApiAdminGalleryIdRouteImport } from './routes/api/admin/gallery/$id'
 import { Route as ApiGalleryV1IndexRouteImport } from './routes/api/gallery/v1/index'
@@ -117,6 +118,12 @@ const ApiAdminArticlesIdRoute = ApiAdminArticlesIdRouteImport.update({
   path: '/api/admin/articles/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminDiagnosticsImageRoute =
+  ApiAdminDiagnosticsImageRouteImport.update({
+    id: '/api/admin/diagnostics/image',
+    path: '/api/admin/diagnostics/image',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminGalleryIndexRoute = ApiAdminGalleryIndexRouteImport.update({
   id: '/api/admin/gallery/',
   path: '/api/admin/gallery/',
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
   '/admin/gallery/$id/edit': typeof AdminGalleryIdEditRoute
   '/api/admin/articles/$id': typeof ApiAdminArticlesIdRoute
+  '/api/admin/diagnostics/image': typeof ApiAdminDiagnosticsImageRoute
   '/api/admin/gallery/$id': typeof ApiAdminGalleryIdRoute
   '/api/news/v1/$id': typeof ApiNewsV1IdRoute
   '/api/admin/articles/': typeof ApiAdminArticlesIndexRoute
@@ -183,6 +191,7 @@ export interface FileRoutesByTo {
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
   '/admin/gallery/$id/edit': typeof AdminGalleryIdEditRoute
   '/api/admin/articles/$id': typeof ApiAdminArticlesIdRoute
+  '/api/admin/diagnostics/image': typeof ApiAdminDiagnosticsImageRoute
   '/api/admin/gallery/$id': typeof ApiAdminGalleryIdRoute
   '/api/news/v1/$id': typeof ApiNewsV1IdRoute
   '/api/admin/articles': typeof ApiAdminArticlesIndexRoute
@@ -208,6 +217,7 @@ export interface FileRoutesById {
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
   '/admin/gallery/$id/edit': typeof AdminGalleryIdEditRoute
   '/api/admin/articles/$id': typeof ApiAdminArticlesIdRoute
+  '/api/admin/diagnostics/image': typeof ApiAdminDiagnosticsImageRoute
   '/api/admin/gallery/$id': typeof ApiAdminGalleryIdRoute
   '/api/news/v1/$id': typeof ApiNewsV1IdRoute
   '/api/admin/articles/': typeof ApiAdminArticlesIndexRoute
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/articles/$id/edit'
     | '/admin/gallery/$id/edit'
     | '/api/admin/articles/$id'
+    | '/api/admin/diagnostics/image'
     | '/api/admin/gallery/$id'
     | '/api/news/v1/$id'
     | '/api/admin/articles/'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/articles/$id/edit'
     | '/admin/gallery/$id/edit'
     | '/api/admin/articles/$id'
+    | '/api/admin/diagnostics/image'
     | '/api/admin/gallery/$id'
     | '/api/news/v1/$id'
     | '/api/admin/articles'
@@ -281,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/articles/$id/edit'
     | '/admin/gallery/$id/edit'
     | '/api/admin/articles/$id'
+    | '/api/admin/diagnostics/image'
     | '/api/admin/gallery/$id'
     | '/api/news/v1/$id'
     | '/api/admin/articles/'
@@ -299,6 +312,7 @@ export interface RootRouteChildren {
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiCronCleanupBlobsRoute: typeof ApiCronCleanupBlobsRoute
   ApiAdminArticlesIdRoute: typeof ApiAdminArticlesIdRoute
+  ApiAdminDiagnosticsImageRoute: typeof ApiAdminDiagnosticsImageRoute
   ApiAdminGalleryIdRoute: typeof ApiAdminGalleryIdRoute
   ApiNewsV1IdRoute: typeof ApiNewsV1IdRoute
   ApiAdminArticlesIndexRoute: typeof ApiAdminArticlesIndexRoute
@@ -428,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminArticlesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/diagnostics/image': {
+      id: '/api/admin/diagnostics/image'
+      path: '/api/admin/diagnostics/image'
+      fullPath: '/api/admin/diagnostics/image'
+      preLoaderRoute: typeof ApiAdminDiagnosticsImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/gallery/': {
       id: '/api/admin/gallery/'
       path: '/api/admin/gallery'
@@ -498,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiCronCleanupBlobsRoute: ApiCronCleanupBlobsRoute,
   ApiAdminArticlesIdRoute: ApiAdminArticlesIdRoute,
+  ApiAdminDiagnosticsImageRoute: ApiAdminDiagnosticsImageRoute,
   ApiAdminGalleryIdRoute: ApiAdminGalleryIdRoute,
   ApiNewsV1IdRoute: ApiNewsV1IdRoute,
   ApiAdminArticlesIndexRoute: ApiAdminArticlesIndexRoute,

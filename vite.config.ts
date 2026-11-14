@@ -19,9 +19,10 @@ export default defineConfig({
       },
     }),
     nitro({
+      preset: "vercel",
       vercel: {
         functions: {
-          runtime: "nodejs22.x",
+          runtime: "bun1.x",
         },
       },
     }),

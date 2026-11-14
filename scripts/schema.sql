@@ -44,3 +44,16 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count INT NOT NULL DEFAULT 1,
   reset_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS media_objects (
+  key VARCHAR(255) PRIMARY KEY,
+  folder VARCHAR(60) NOT NULL DEFAULT '',
+  size_bytes BIGINT NOT NULL CHECK (size_bytes >= 0),
+  thumb_size_bytes BIGINT NOT NULL DEFAULT 0 CHECK (thumb_size_bytes >= 0),
+  content_type VARCHAR(100) NOT NULL DEFAULT 'image/webp',
+  width INTEGER NOT NULL CHECK (width > 0),
+  height INTEGER NOT NULL CHECK (height > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS media_objects_created_at_idx ON media_objects (created_at DESC);

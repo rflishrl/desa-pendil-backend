@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "bunVersion": "1.x",
   "framework": "tanstack-start",
   "regions": ["sin1"],
   "crons": [{ "path": "/api/cron/cleanup-blobs", "schedule": "0 19 * * *" }]

@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.4.4",
   "engines": {
-    "node": "22.x"
+    "bun": ">=1.4"
   },
   "scripts": {
     "dev": "vite dev --port 4000",
@@ -33,6 +33,7 @@
     "@tanstack/react-router": "1.170.46",
     "@tanstack/react-start": "1.169.5",
     "@vercel/blob": "2.8.2",
+    "aws4fetch": "^1.0.20",
     "class-variance-authority": "0.7.1",
     "cn": "0.5.1",
     "lucide-react": "1.66.0",
