@@ -34,6 +34,7 @@ export type GalleryFormValues = z.input<typeof galleryCreateSchema>;
 export interface GalleryDto {
   id: string;
   url: string;
+  thumbUrl?: string;
   alt: string;
   caption: string | null;
   sortOrder: number;

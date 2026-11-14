@@ -5,6 +5,7 @@ import type {
 } from "@/features/articles/schemas";
 import { getDb } from "@/lib/db/client";
 import { isUuid } from "@/lib/ids";
+import { getPublicMediaUrl, getPublicThumbUrl } from "@/lib/storage/media-url";
 
 interface RawArticleRow {
   id: string;
@@ -22,6 +23,7 @@ interface RawArticleRow {
 }
 
 function toDto(row: RawArticleRow): ArticleDto {
+  const thumbUrl = row.thumbnail_url ? getPublicThumbUrl(row.thumbnail_url) : null;
   return {
     id: row.id,
     slug: row.slug,
@@ -29,7 +31,8 @@ function toDto(row: RawArticleRow): ArticleDto {
     title: row.title,
     excerpt: row.excerpt,
     content: row.content,
-    thumbnail: row.thumbnail_url,
+    thumbnail: row.thumbnail_url ? getPublicMediaUrl(row.thumbnail_url) : null,
+    ...(thumbUrl ? { thumbUrl } : {}),
     author: row.author,
     status: row.status as "draft" | "published",
     publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,

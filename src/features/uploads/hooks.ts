@@ -5,13 +5,26 @@ import { useMutation } from "@tanstack/react-query";
 import type { UploadFolder, UploadResult } from "@/features/uploads/schemas";
 import { type ApiClientError, api } from "@/lib/api/client";
 
+export interface UploadPhotoInput {
+  file: File;
+  onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
+}
+
 export function useUploadPhoto(folder: UploadFolder) {
-  return useMutation<UploadResult, ApiClientError, File>({
-    mutationFn: (file) => {
+  return useMutation<UploadResult, ApiClientError, File | UploadPhotoInput>({
+    mutationFn: (input) => {
+      const file = input instanceof File ? input : input.file;
+      const onProgress = input instanceof File ? undefined : input.onProgress;
+      const signal = input instanceof File ? undefined : input.signal;
+
       const form = new FormData();
       form.set("file", file);
       form.set("folder", folder);
-      return api.upload<UploadResult>("/api/upload", form);
+      return api.upload<UploadResult>("/api/upload", form, {
+        onProgress,
+        signal,
+      });
     },
   });
 }

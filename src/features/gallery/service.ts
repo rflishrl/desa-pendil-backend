@@ -10,6 +10,7 @@ import {
   galleryCreateSchema,
   galleryUpdateSchema,
 } from "@/features/gallery/schemas";
+import { deleteStoredMedia } from "@/features/uploads/media-storage";
 import { notFound } from "@/lib/api/errors";
 import { type Paginated, paginate } from "@/lib/api/types";
 import type { Actor } from "@/lib/auth/actor";
@@ -17,7 +18,8 @@ import { assertAdmin } from "@/lib/auth/authorize";
 import { isUuid } from "@/lib/ids";
 import { revalidateFrontend } from "@/lib/revalidate";
 import { listQuerySchema } from "@/lib/schemas/common";
-import { deleteImage } from "@/lib/storage/blob";
+import { comparableMediaRef } from "@/lib/storage/media-key";
+import { normalizeMediaInputForStorage } from "@/lib/storage/media-url";
 
 const LABEL = "Foto";
 const REVALIDATE_TAGS = ["gallery"];
@@ -52,7 +54,11 @@ export async function createGalleryImage(
   rawInput: unknown,
 ): Promise<GalleryDto> {
   assertAdmin(actor);
-  const input = galleryCreateSchema.parse(rawInput);
+  const parsed = galleryCreateSchema.parse(rawInput);
+  const input = {
+    ...parsed,
+    url: normalizeMediaInputForStorage(parsed.url),
+  };
   const created = await insertGalleryImage(input);
   revalidateFrontend(REVALIDATE_TAGS);
   return created;
@@ -64,15 +70,25 @@ export async function updateGalleryImageById(
   rawInput: unknown,
 ): Promise<GalleryDto> {
   assertAdmin(actor);
-  const input = galleryUpdateSchema.parse(rawInput);
+  const parsed = galleryUpdateSchema.parse(rawInput);
   const current = await getGalleryImage(actor, id);
-  if (Object.keys(input).length === 0) return current;
+  if (Object.keys(parsed).length === 0) return current;
+
+  const input =
+    parsed.url !== undefined
+      ? {
+          ...parsed,
+          url: normalizeMediaInputForStorage(parsed.url),
+        }
+      : parsed;
 
   const result = await repoUpdateGalleryImage(id, input);
   if (!result) throw notFound(LABEL);
 
   const { item, previousUrl } = result;
-  if (previousUrl && previousUrl !== item.url) await deleteImage(previousUrl);
+  if (previousUrl && comparableMediaRef(previousUrl) !== comparableMediaRef(item.url)) {
+    await deleteStoredMedia(previousUrl);
+  }
   revalidateFrontend(REVALIDATE_TAGS);
   return item;
 }
@@ -85,7 +101,7 @@ export async function deleteGalleryImageById(
   const removed = isUuid(id) ? await repoDeleteGalleryImage(id) : null;
   if (!removed) throw notFound(LABEL);
 
-  await deleteImage(removed.url);
+  await deleteStoredMedia(removed.url);
   revalidateFrontend(REVALIDATE_TAGS);
   return { id };
 }

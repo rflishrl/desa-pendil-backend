@@ -20,19 +20,16 @@ import { useDeleteGalleryImage, useGalleryList } from "@/features/gallery/hooks"
 import { GALLERY_ADMIN_PATH, type GalleryListParams } from "@/features/gallery/queries";
 import type { GalleryDto } from "@/features/gallery/schemas";
 
-function PhotoCard({ image, priority = false }: { image: GalleryDto; priority?: boolean }) {
+function PhotoCard({ image }: { image: GalleryDto }) {
   const remove = useDeleteGalleryImage();
   return (
     <li className="overflow-hidden rounded-lg bg-card shadow-card">
-      {/* <img> biasa: pratinjau admin tidak perlu dioptimasi next/image. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={image.url}
+        src={image.thumbUrl ?? image.url}
         alt={image.alt}
         width={400}
         height={300}
-        loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "auto"}
+        loading="lazy"
         decoding="async"
         className="aspect-4/3 w-full bg-muted object-cover"
       />
@@ -105,8 +102,8 @@ export function GalleryListView({ params }: { params: GalleryListParams }) {
   return (
     <div aria-busy={isFetching}>
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {data.items.map((image, index) => (
-          <PhotoCard key={image.id} image={image} priority={index < 3} />
+        {data.items.map((image) => (
+          <PhotoCard key={image.id} image={image} />
         ))}
       </ul>
       <PaginationNav pagination={data.pagination} basePath={GALLERY_ADMIN_PATH} q="" />

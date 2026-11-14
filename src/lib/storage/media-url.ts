@@ -1,27 +1,26 @@
 import { AppError } from "@/lib/api/errors";
 import { ConfigError, isNonProductionMediaEnv } from "@/lib/env";
+import {
+  BLOB_HOSTNAME,
+  extractCanonicalKeyFromHttpsUrl,
+  isAcceptedMediaInput,
+  isLegacyBlobUrl,
+  isLegacyMediaUrl,
+  isValidMediaKey,
+  isValidObjectKey,
+} from "@/lib/storage/media-key";
 
 export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
-const UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-
-const CANONICAL_FULL_KEY_RE = new RegExp(`^(?:dev\\/)?${UUID_PATTERN}\\.webp$`);
-const CANONICAL_OBJECT_KEY_RE = new RegExp(`^(?:dev\\/)?${UUID_PATTERN}(?:-thumb)?\\.webp$`);
-
-/** Returns true when value is a legacy absolute HTTP/HTTPS media URL. */
-export function isLegacyMediaUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
-/** Validates canonical stored full-size key format (`<uuid>.webp` or `dev/<uuid>.webp`). */
-export function isValidMediaKey(key: string): boolean {
-  return CANONICAL_FULL_KEY_RE.test(key);
-}
-
-/** Validates any canonical R2 object key (`full` or `-thumb`, with optional `dev/` prefix). */
-export function isValidObjectKey(key: string): boolean {
-  return CANONICAL_OBJECT_KEY_RE.test(key);
-}
+export {
+  BLOB_HOSTNAME,
+  extractCanonicalKeyFromHttpsUrl,
+  isAcceptedMediaInput,
+  isLegacyBlobUrl,
+  isLegacyMediaUrl,
+  isValidMediaKey,
+  isValidObjectKey,
+};
 
 /** Throws AppError("BAD_REQUEST") if canonical full-size media key is invalid. */
 export function assertValidMediaKey(key: string): string {
@@ -88,4 +87,32 @@ export function getPublicThumbUrl(keyOrUrl: string, explicitDomain?: string): st
   if (isLegacyMediaUrl(keyOrUrl)) return keyOrUrl;
   const thumbKey = deriveThumbKey(keyOrUrl);
   return `${resolvePublicMediaDomain(explicitDomain)}/${thumbKey}`;
+}
+
+/**
+ * Normalizes an incoming media reference (`url` or canonical key) for DB persistence.
+ * Strips the configured `R2_PUBLIC_DOMAIN` prefix into a canonical UUID WebP key while
+ * keeping legacy Vercel Blob URLs intact during transition.
+ */
+export function normalizeMediaInputForStorage(value: string, explicitDomain?: string): string {
+  if (!value) return "";
+  if (isLegacyBlobUrl(value) || isValidMediaKey(value)) return value;
+
+  const extracted = extractCanonicalKeyFromHttpsUrl(value);
+  if (!extracted) {
+    throw new AppError("VALIDATION", "Alamat foto tidak berasal dari penyimpanan yang diizinkan.");
+  }
+
+  let expectedOrigin: string;
+  try {
+    expectedOrigin = new URL(resolvePublicMediaDomain(explicitDomain)).origin;
+  } catch (error) {
+    throw new AppError("VALIDATION", "Domain media R2 belum dikonfigurasi untuk menerima URL R2.", {
+      cause: error,
+    });
+  }
+  if (extracted.origin !== expectedOrigin) {
+    throw new AppError("VALIDATION", "Alamat foto tidak berasal dari domain media aplikasi.");
+  }
+  return extracted.key;
 }

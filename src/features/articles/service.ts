@@ -11,6 +11,7 @@ import {
   articleCreateSchema,
   articleUpdateSchema,
 } from "@/features/articles/schemas";
+import { deleteStoredMedia } from "@/features/uploads/media-storage";
 import { AppError, notFound } from "@/lib/api/errors";
 import { type Paginated, paginate } from "@/lib/api/types";
 import type { Actor } from "@/lib/auth/actor";
@@ -19,7 +20,8 @@ import { isUuid } from "@/lib/ids";
 import { revalidateFrontend } from "@/lib/revalidate";
 import { listQuerySchema } from "@/lib/schemas/common";
 import { randomSuffix, slugify } from "@/lib/slug";
-import { deleteImage } from "@/lib/storage/blob";
+import { comparableMediaRef } from "@/lib/storage/media-key";
+import { normalizeMediaInputForStorage } from "@/lib/storage/media-url";
 
 const LABEL = "Konten";
 const REVALIDATE_TAGS = ["news"];
@@ -66,7 +68,11 @@ async function generateUniqueSlug(title: string): Promise<string> {
 
 export async function createArticle(actor: Actor | null, rawInput: unknown): Promise<ArticleDto> {
   assertAdmin(actor);
-  const input: ArticleCreateInput = articleCreateSchema.parse(rawInput);
+  const parsed: ArticleCreateInput = articleCreateSchema.parse(rawInput);
+  const input: ArticleCreateInput = {
+    ...parsed,
+    thumbnail_url: normalizeMediaInputForStorage(parsed.thumbnail_url),
+  };
   const slug = await generateUniqueSlug(input.title);
   const created = await insertArticle(input, slug);
   revalidateFrontend(REVALIDATE_TAGS);
@@ -80,18 +86,29 @@ export async function updateArticle(
 ): Promise<ArticleDto> {
   assertAdmin(actor);
   if (!isUuid(id)) throw notFound(LABEL);
-  const input = articleUpdateSchema.parse(rawInput);
+  const parsed = articleUpdateSchema.parse(rawInput);
 
-  if (Object.keys(input).length === 0) {
+  if (Object.keys(parsed).length === 0) {
     return getArticle({ audience: "admin", actor }, id);
   }
+
+  const input =
+    parsed.thumbnail_url !== undefined
+      ? {
+          ...parsed,
+          thumbnail_url: normalizeMediaInputForStorage(parsed.thumbnail_url),
+        }
+      : parsed;
 
   const result = await repoUpdateArticle(id, input);
   if (!result) throw notFound(LABEL);
 
   const { item, previousThumbnail } = result;
-  if (previousThumbnail && previousThumbnail !== item.thumbnail) {
-    await deleteImage(previousThumbnail);
+  if (
+    previousThumbnail &&
+    comparableMediaRef(previousThumbnail) !== comparableMediaRef(item.thumbnail ?? "")
+  ) {
+    await deleteStoredMedia(previousThumbnail);
   }
 
   revalidateFrontend(REVALIDATE_TAGS);
@@ -105,7 +122,7 @@ export async function deleteArticle(actor: Actor | null, id: string): Promise<{ 
   const removed = await repoDeleteArticle(id);
   if (!removed) throw notFound(LABEL);
 
-  if (removed.thumbnail) await deleteImage(removed.thumbnail);
+  if (removed.thumbnail) await deleteStoredMedia(removed.thumbnail);
   revalidateFrontend(REVALIDATE_TAGS);
   return { id };
 }

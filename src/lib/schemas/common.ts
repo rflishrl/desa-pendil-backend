@@ -1,19 +1,16 @@
 import { z } from "zod";
 
-/** Hostname pattern for uploaded assets on Vercel Blob storage. */
-export const BLOB_HOSTNAME = /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/;
+import { BLOB_HOSTNAME, isAcceptedMediaInput } from "@/lib/storage/media-key";
+
+export { BLOB_HOSTNAME };
 
 /**
- * Image URL validation schema restricted to Vercel Blob storage.
- * Ensures assets are served from managed storage for Next.js image optimization.
+ * Image reference validation schema supporting canonical R2 keys/URLs and legacy Vercel Blob URLs.
+ * Exact R2 domain matching is additionally enforced server-side against `R2_PUBLIC_DOMAIN`.
  */
-export const blobImageUrl = z
-  .url({
-    protocol: /^https$/,
-    hostname: BLOB_HOSTNAME,
-    error: "Foto harus diunggah lewat tombol Pilih foto (alamat Vercel Blob).",
-  })
-  .max(2048);
+export const blobImageUrl = z.string().trim().max(2048).refine(isAcceptedMediaInput, {
+  error: "Foto harus diunggah lewat tombol Pilih foto.",
+});
 
 export const optionalBlobImageUrl = z.union([z.literal(""), blobImageUrl]);
 

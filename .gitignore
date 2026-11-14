@@ -12,3 +12,7 @@ next-env.d.ts
 .vercel
 npm-debug.log*
 .DS_Store
+
+# Agent skills & workflows (local)
+.agents/
+

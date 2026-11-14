@@ -10,6 +10,7 @@ import {
   getPublicThumbUrl,
   isValidMediaKey,
   isValidObjectKey,
+  normalizeMediaInputForStorage,
 } from "@/lib/storage/media-url";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
@@ -92,5 +93,18 @@ describe("getPublicMediaUrl & getPublicThumbUrl", () => {
 
     vi.stubEnv("R2_PUBLIC_DOMAIN", "http://insecure.example.com");
     expect(() => getPublicThumbUrl(`${VALID_UUID}.webp`)).toThrow(ConfigError);
+  });
+
+  it("normalizes R2 domain URLs into canonical keys and rejects wrong origins", () => {
+    expect(normalizeMediaInputForStorage(`${DOMAIN}/dev/${VALID_UUID}.webp`)).toBe(
+      `dev/${VALID_UUID}.webp`,
+    );
+    expect(normalizeMediaInputForStorage(`${VALID_UUID}.webp`)).toBe(`${VALID_UUID}.webp`);
+    const legacy =
+      "https://m6pmrghaaiznqnan.public.blob.vercel-storage.com/desa-pendil/articles/a.jpg";
+    expect(normalizeMediaInputForStorage(legacy)).toBe(legacy);
+    expect(() =>
+      normalizeMediaInputForStorage(`https://wrong-host.example.com/${VALID_UUID}.webp`),
+    ).toThrow();
   });
 });

@@ -4,6 +4,7 @@ import type {
   GalleryUpdateInput,
 } from "@/features/gallery/schemas";
 import { getDb } from "@/lib/db/client";
+import { getPublicMediaUrl, getPublicThumbUrl } from "@/lib/storage/media-url";
 
 interface RawGalleryRow {
   id: string;
@@ -16,9 +17,11 @@ interface RawGalleryRow {
 }
 
 function toDto(row: RawGalleryRow): GalleryDto {
+  const thumbUrl = getPublicThumbUrl(row.url);
   return {
     id: row.id,
-    url: row.url,
+    url: getPublicMediaUrl(row.url),
+    ...(thumbUrl ? { thumbUrl } : {}),
     alt: row.alt,
     caption: row.caption,
     sortOrder: row.sort_order,
