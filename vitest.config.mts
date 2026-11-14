@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     env: {
       DATABASE_URI: "postgresql://test:test@ep-test.neon.tech/neondb?sslmode=require",
       SESSION_SECRET: "0123456789abcdef0123456789abcdef",

@@ -135,4 +135,25 @@ describe("createR2Provider", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("normalizes endpoint URLs that already include a trailing bucket segment", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const provider = createR2Provider(
+      {
+        ...CONFIG,
+        endpoint: "https://acct123.r2.cloudflarestorage.com/desa-pendil",
+      },
+      fetchMock,
+    );
+
+    await provider.putObject({
+      key: `dev/${VALID_UUID}.webp`,
+      body: new Uint8Array([1, 2]),
+    });
+
+    const req = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(req.url).toBe(
+      `https://acct123.r2.cloudflarestorage.com/desa-pendil/dev/${VALID_UUID}.webp`,
+    );
+  });
 });

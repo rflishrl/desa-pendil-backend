@@ -35,6 +35,9 @@
   - Halaman admin `/admin/storage` (`MediaStorageDashboard.tsx`): menampilkan bilah progres kuota, status, komposisi aset, daftar aset terpaginasi (`loading="lazy"`), serta sidebar **Penyimpanan** di `AdminShell`.
   - Cron `GET /api/cron/cleanup-media` (`vercel.json`): menghapus pasangan `full + thumb` R2 orphan melewati grace period 24 jam via `DeleteObject` + baris DB `media_objects` tanpa `ListObjectsV2`, memangkas `rate_limits` kadaluarsa, serta tetap menjalankan cleanup orphan Blob selama transisi bila `STORAGE_PROVIDER=blob` atau `BLOB_READ_WRITE_TOKEN` masih aktif (`/api/cron/cleanup-blobs` dipertahankan sebagai alias kompatibilitas).
   - Rate limit upload (`RATE_LIMITS.upload`, 30 req / 10 menit per IP) terpasang pada `POST /api/upload`.
+- **Cadangan & Migrasi Phase 5 (`scripts/backup-blob.ts`, `scripts/migrate-blob-to-r2.ts`):**
+  - `bun run blob:backup`: mengunduh semua objek Vercel Blob (terbatas pada host `*.public.blob.vercel-storage.com`, timeout 30 detik, batas ukuran 25 MB/file) ke `.backups/blob-backup` beserta `manifest.json` berisi SHA-256 dan ukuran byte (idempoten & dapat dilanjutkan).
+  - `bun run blob:migrate`: default `--dry-run` dan `--target=dev` (`dev/<uuid>.webp`), konkurensi terbatas (`1-2`), checkpoint JSON untuk resume idempoten, memproses ulang via `Bun.Image` menjadi `full + thumb` dan mencatat di `media_objects`. Kolom gambar khusus (`articles.thumbnail_url`, `gallery_images.url`) diubah menjadi key canonical, sedangkan URL Blob inline dalam `content`/`excerpt`/`caption` diubah menjadi URL R2 publik penuh (`getPublicMediaUrl`). Gunakan `--execute --target=dev` terlebih dahulu pada Neon branch sebelum `--execute --target=production`.
 
 ## Cara Mengganti `R2_PUBLIC_DOMAIN`
 1. Sambungkan Custom Domain baru di bucket `desa-pendil` pada Cloudflare R2 dan pastikan termasuk dalam filter Cache Rule + WAF Rate Limiting.
