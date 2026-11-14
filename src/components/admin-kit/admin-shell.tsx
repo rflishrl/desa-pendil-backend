@@ -3,6 +3,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   ExternalLinkIcon,
+  HardDriveIcon,
   ImagesIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -59,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboardIcon },
   { label: "Konten", href: "/admin/articles", icon: NewspaperIcon },
   { label: "Galeri", href: "/admin/gallery", icon: ImagesIcon },
+  { label: "Penyimpanan", href: "/admin/storage", icon: HardDriveIcon },
 ];
 
 function isNavActive(pathname: string, href: string) {
@@ -106,6 +108,8 @@ function AdminBreadcrumbs() {
       } else if (pathname.endsWith("/edit")) {
         crumbs.push({ label: "Ubah Foto", isCurrent: true });
       }
+    } else if (pathname.startsWith("/admin/storage")) {
+      crumbs.push({ label: "Penyimpanan", isCurrent: true });
     }
 
     return crumbs;

@@ -70,3 +70,15 @@ export async function resetRateLimit(rule: RateLimitRule, identifier: string): P
     log("warn", "rate limit reset failed", { error });
   }
 }
+
+/** Deletes expired rate limit rows to prevent table growth. */
+export async function purgeExpiredRateLimits(): Promise<number> {
+  try {
+    const sql = getDb();
+    const rows = await sql`DELETE FROM rate_limits WHERE reset_at < NOW() RETURNING key`;
+    return rows.length;
+  } catch (error) {
+    log("warn", "purge expired rate limits failed", { error });
+    return 0;
+  }
+}

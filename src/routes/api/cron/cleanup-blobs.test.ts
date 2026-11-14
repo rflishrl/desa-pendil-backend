@@ -39,7 +39,13 @@ describe("GET /api/cron/cleanup-blobs", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       success: true,
-      data: { scanned: 3, deleted: 1 },
+      data: {
+        scanned: 3,
+        deleted: 1,
+        r2: { scanned: 0, deleted: 0 },
+        blob: { scanned: 3, deleted: 1 },
+        purgedRateLimits: 0,
+      },
     });
     expect(listReferencedImageUrls).toHaveBeenCalled();
 

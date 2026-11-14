@@ -13,15 +13,18 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminStorageRouteImport } from './routes/admin/storage'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AdminArticlesIndexRouteImport } from './routes/admin/articles/index'
 import { Route as AdminArticlesNewRouteImport } from './routes/admin/articles/new'
 import { Route as AdminGalleryIndexRouteImport } from './routes/admin/gallery/index'
 import { Route as AdminGalleryNewRouteImport } from './routes/admin/gallery/new'
+import { Route as ApiAdminStorageRouteImport } from './routes/api/admin/storage'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiCronCleanupBlobsRouteImport } from './routes/api/cron/cleanup-blobs'
+import { Route as ApiCronCleanupMediaRouteImport } from './routes/api/cron/cleanup-media'
 import { Route as AdminArticlesIdEditRouteImport } from './routes/admin/articles/$id.edit'
 import { Route as AdminGalleryIdEditRouteImport } from './routes/admin/gallery/$id.edit'
 import { Route as ApiAdminArticlesIndexRouteImport } from './routes/api/admin/articles/index'
@@ -51,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStorageRoute = AdminStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
   getParentRoute: () => AdminRoute,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -83,6 +91,11 @@ const AdminGalleryNewRoute = AdminGalleryNewRouteImport.update({
   path: '/gallery/new',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiAdminStorageRoute = ApiAdminStorageRouteImport.update({
+  id: '/api/admin/storage',
+  path: '/api/admin/storage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
   id: '/api/auth/login',
   path: '/api/auth/login',
@@ -96,6 +109,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
 const ApiCronCleanupBlobsRoute = ApiCronCleanupBlobsRouteImport.update({
   id: '/api/cron/cleanup-blobs',
   path: '/api/cron/cleanup-blobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronCleanupMediaRoute = ApiCronCleanupMediaRouteImport.update({
+  id: '/api/cron/cleanup-media',
+  path: '/api/cron/cleanup-media',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminArticlesIdEditRoute = AdminArticlesIdEditRouteImport.update({
@@ -154,14 +172,17 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/storage': typeof AdminStorageRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/articles/new': typeof AdminArticlesNewRoute
   '/admin/gallery/new': typeof AdminGalleryNewRoute
+  '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
+  '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles/': typeof AdminArticlesIndexRoute
   '/admin/gallery/': typeof AdminGalleryIndexRoute
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
@@ -178,14 +199,17 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/storage': typeof AdminStorageRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin': typeof AdminIndexRoute
   '/admin/articles/new': typeof AdminArticlesNewRoute
   '/admin/gallery/new': typeof AdminGalleryNewRoute
+  '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
+  '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles': typeof AdminArticlesIndexRoute
   '/admin/gallery': typeof AdminGalleryIndexRoute
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
@@ -204,14 +228,17 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/storage': typeof AdminStorageRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/articles/new': typeof AdminArticlesNewRoute
   '/admin/gallery/new': typeof AdminGalleryNewRoute
+  '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
+  '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles/': typeof AdminArticlesIndexRoute
   '/admin/gallery/': typeof AdminGalleryIndexRoute
   '/admin/articles/$id/edit': typeof AdminArticlesIdEditRoute
@@ -231,14 +258,17 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/admin/storage'
     | '/api/health'
     | '/api/upload'
     | '/admin/'
     | '/admin/articles/new'
     | '/admin/gallery/new'
+    | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/cron/cleanup-blobs'
+    | '/api/cron/cleanup-media'
     | '/admin/articles/'
     | '/admin/gallery/'
     | '/admin/articles/$id/edit'
@@ -255,14 +285,17 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/admin/storage'
     | '/api/health'
     | '/api/upload'
     | '/admin'
     | '/admin/articles/new'
     | '/admin/gallery/new'
+    | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/cron/cleanup-blobs'
+    | '/api/cron/cleanup-media'
     | '/admin/articles'
     | '/admin/gallery'
     | '/admin/articles/$id/edit'
@@ -280,14 +313,17 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/admin/storage'
     | '/api/health'
     | '/api/upload'
     | '/admin/'
     | '/admin/articles/new'
     | '/admin/gallery/new'
+    | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/cron/cleanup-blobs'
+    | '/api/cron/cleanup-media'
     | '/admin/articles/'
     | '/admin/gallery/'
     | '/admin/articles/$id/edit'
@@ -308,9 +344,11 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiUploadRoute: typeof ApiUploadRoute
+  ApiAdminStorageRoute: typeof ApiAdminStorageRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiCronCleanupBlobsRoute: typeof ApiCronCleanupBlobsRoute
+  ApiCronCleanupMediaRoute: typeof ApiCronCleanupMediaRoute
   ApiAdminArticlesIdRoute: typeof ApiAdminArticlesIdRoute
   ApiAdminDiagnosticsImageRoute: typeof ApiAdminDiagnosticsImageRoute
   ApiAdminGalleryIdRoute: typeof ApiAdminGalleryIdRoute
@@ -349,6 +387,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/storage': {
+      id: '/admin/storage'
+      path: '/storage'
+      fullPath: '/admin/storage'
+      preLoaderRoute: typeof AdminStorageRouteImport
       parentRoute: typeof AdminRoute
     }
     '/api/health': {
@@ -393,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGalleryNewRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/admin/storage': {
+      id: '/api/admin/storage'
+      path: '/api/admin/storage'
+      fullPath: '/api/admin/storage'
+      preLoaderRoute: typeof ApiAdminStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/login': {
       id: '/api/auth/login'
       path: '/api/auth/login'
@@ -412,6 +464,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/cleanup-blobs'
       fullPath: '/api/cron/cleanup-blobs'
       preLoaderRoute: typeof ApiCronCleanupBlobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/cleanup-media': {
+      id: '/api/cron/cleanup-media'
+      path: '/api/cron/cleanup-media'
+      fullPath: '/api/cron/cleanup-media'
+      preLoaderRoute: typeof ApiCronCleanupMediaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/articles/$id/edit': {
@@ -488,6 +547,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminStorageRoute: typeof AdminStorageRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminArticlesNewRoute: typeof AdminArticlesNewRoute
   AdminGalleryNewRoute: typeof AdminGalleryNewRoute
@@ -498,6 +558,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminStorageRoute: AdminStorageRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminArticlesNewRoute: AdminArticlesNewRoute,
   AdminGalleryNewRoute: AdminGalleryNewRoute,
@@ -515,9 +576,11 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiUploadRoute: ApiUploadRoute,
+  ApiAdminStorageRoute: ApiAdminStorageRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiCronCleanupBlobsRoute: ApiCronCleanupBlobsRoute,
+  ApiCronCleanupMediaRoute: ApiCronCleanupMediaRoute,
   ApiAdminArticlesIdRoute: ApiAdminArticlesIdRoute,
   ApiAdminDiagnosticsImageRoute: ApiAdminDiagnosticsImageRoute,
   ApiAdminGalleryIdRoute: ApiAdminGalleryIdRoute,

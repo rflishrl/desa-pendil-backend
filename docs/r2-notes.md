@@ -30,6 +30,11 @@
 - **Pipeline Upload Phase 3:**
   - Server (`src/features/uploads/image-pipeline.ts` & `service.ts`): validasi magic bytes JPEG/PNG/WebP statis (menolak GIF, SVG, AVIF, HEIC, TIFF, WebP animasi via VP8X flag / `ANIM` / `ANMF`, MIME spoofing, serta bom dekompresi > 50 MP), generate dual WebP (`full <= 1920px <= 1 MB`, `thumb <= 480px` quality 78), cek kuota `media_objects` terhadap `R2_APP_QUOTA_MB`, upload atomik dengan rollback bila `thumb` PUT atau `insertMediaObject` gagal, dan tetap mendukung `STORAGE_PROVIDER=blob`.
   - Klien & Admin UI (`src/lib/image/prepare.ts` & `ImageUploader.tsx`): pre-shrink otomatis bila file > 3.5 MB ke max sisi 2560 px (fallback Safari PNG -> JPEG), progress upload XHR (`<progress>`), metrik penghematan (`tabular-nums`), paste/drag-and-drop/keyboard accessible, dan field aditif `thumbUrl` pada DTO artikel & galeri.
+- **Monitoring & Cleanup Phase 4:**
+  - Endpoint `GET /api/admin/storage` (`withApi({ access: "admin" })`): menghitung penggunaan `full + thumb` terhadap `R2_APP_QUOTA_MB` (`Normal < 70%`, `Waspada 70-89%`, `Kritis >= 90%`), komposisi aset (aktif vs orphan dalam grace period 24 jam vs siap dibersihkan), daftar aset terpaginasi, dan konfigurasi non-rahasia langsung dari DB Neon (`media_objects`) tanpa memanggil `ListObjectsV2`.
+  - Halaman admin `/admin/storage` (`MediaStorageDashboard.tsx`): menampilkan bilah progres kuota, status, komposisi aset, daftar aset terpaginasi (`loading="lazy"`), serta sidebar **Penyimpanan** di `AdminShell`.
+  - Cron `GET /api/cron/cleanup-media` (`vercel.json`): menghapus pasangan `full + thumb` R2 orphan melewati grace period 24 jam via `DeleteObject` + baris DB `media_objects` tanpa `ListObjectsV2`, memangkas `rate_limits` kadaluarsa, serta tetap menjalankan cleanup orphan Blob selama transisi bila `STORAGE_PROVIDER=blob` atau `BLOB_READ_WRITE_TOKEN` masih aktif (`/api/cron/cleanup-blobs` dipertahankan sebagai alias kompatibilitas).
+  - Rate limit upload (`RATE_LIMITS.upload`, 30 req / 10 menit per IP) terpasang pada `POST /api/upload`.
 
 ## Cara Mengganti `R2_PUBLIC_DOMAIN`
 1. Sambungkan Custom Domain baru di bucket `desa-pendil` pada Cloudflare R2 dan pastikan termasuk dalam filter Cache Rule + WAF Rate Limiting.

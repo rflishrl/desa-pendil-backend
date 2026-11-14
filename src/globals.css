@@ -181,3 +181,28 @@
 @utility on-dark {
   --focus-color: #fff;
 }
+
+progress.quota-progress {
+  appearance: none;
+  border: 0 solid;
+  border-radius: 1e5px;
+  overflow: clip;
+  background: var(--muted);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+progress.quota-progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+progress.quota-progress::-webkit-progress-value {
+  background: var(--quota-fill, var(--color-success));
+  border-radius: 1e5px;
+  transition: inline-size 0.3s;
+}
+
+progress.quota-progress::-moz-progress-bar {
+  background: var(--quota-fill, var(--color-success));
+  border-radius: 1e5px;
+  transition: inline-size 0.3s;
+}

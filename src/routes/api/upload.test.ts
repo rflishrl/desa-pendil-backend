@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppError } from "@/lib/api/errors";
 import { resetServerEnvCache } from "@/lib/env";
 import { readBody, sameOriginRequest } from "../../../test/api";
 
@@ -14,7 +15,16 @@ const putObject = vi.fn();
 const deleteObjects = vi.fn();
 const insertMediaObject = vi.fn();
 const getMediaUsageSummary = vi.fn();
+const consumeRateLimit = vi.fn();
 
+vi.mock("@/lib/api/rate-limit", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/api/rate-limit")>("@/lib/api/rate-limit");
+  return {
+    ...actual,
+    consumeRateLimit: (...args: unknown[]) => consumeRateLimit(...args),
+  };
+});
 vi.mock("@/lib/auth/session", () => ({
   getCurrentAdmin: (...args: unknown[]) => getCurrentAdmin(...args),
 }));
@@ -91,6 +101,7 @@ beforeEach(() => {
   putObject.mockResolvedValue({ key: "dev/x.webp", etag: "1", sizeBytes: 44 });
   deleteObjects.mockResolvedValue({ deleted: [], failed: [] });
   insertMediaObject.mockResolvedValue({ key: "dev/x.webp" });
+  consumeRateLimit.mockResolvedValue(undefined);
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -230,5 +241,17 @@ describe("POST /api/upload", () => {
   it("menolak body bukan multipart", async () => {
     const bad = await POST(sameOriginRequest("/api/upload", { method: "POST", json: { x: 1 } }));
     expect(bad.status).toBe(400);
+  });
+
+  it("menerapkan rate limit upload dan mengembalikan 429 saat kuota jendela habis", async () => {
+    consumeRateLimit.mockRejectedValueOnce(
+      new AppError("RATE_LIMITED", "Terlalu banyak permintaan. Coba lagi nanti."),
+    );
+
+    const file = new File([TINY_PNG], "tiny.png", { type: "image/png" });
+    const res = await POST(makeUploadRequest("articles", file));
+    expect(res.status).toBe(429);
+    expect(consumeRateLimit).toHaveBeenCalledTimes(1);
+    expect(putObject).not.toHaveBeenCalled();
   });
 });
