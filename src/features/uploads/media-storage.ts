@@ -1,10 +1,8 @@
 import { deleteMediaObjectByKey } from "@/features/uploads/repository";
 import { log } from "@/lib/log";
-import { deleteImage as deleteBlobImage } from "@/lib/storage/blob";
 import {
   deriveThumbKey,
   extractCanonicalKeyFromHttpsUrl,
-  isLegacyBlobUrl,
   isValidMediaKey,
 } from "@/lib/storage/media-url";
 import { getR2Storage } from "@/lib/storage/provider";
@@ -25,16 +23,11 @@ function resolveDeletableR2Key(keyOrUrl: string): string | null {
 }
 
 /**
- * Deletes an old image from either Vercel Blob (legacy URL) or Cloudflare R2 (`full + thumb`
- * pair and `media_objects` row). Failures are non-fatal and logged.
+ * Deletes an old image from Cloudflare R2 (`full + thumb` pair and `media_objects` row).
+ * Failures are non-fatal and logged.
  */
 export async function deleteStoredMedia(keyOrUrl: string | null | undefined): Promise<void> {
   if (!keyOrUrl) return;
-
-  if (isLegacyBlobUrl(keyOrUrl)) {
-    await deleteBlobImage(keyOrUrl);
-    return;
-  }
 
   const r2Key = resolveDeletableR2Key(keyOrUrl);
   if (!r2Key) return;

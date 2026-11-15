@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { optionalBlobImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
+import { optionalMediaImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
 
 export const ARTICLE_TYPES = ["berita", "artikel", "postingan"] as const;
 export const ARTICLE_STATUSES = ["draft", "published"] as const;
@@ -28,7 +28,7 @@ const articleFields = {
     .trim()
     .min(1, "Isi tidak boleh kosong.")
     .max(50_000, "Isi maksimal 50.000 karakter."),
-  thumbnail_url: optionalBlobImageUrl,
+  thumbnail_url: optionalMediaImageUrl,
   author: requiredText("Penulis", 80),
   status: z.enum(ARTICLE_STATUSES, { error: "Status tidak valid." }),
 };

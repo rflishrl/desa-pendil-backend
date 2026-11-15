@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { blobImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
+import { mediaImageUrl, optionalText, requiredText } from "@/lib/schemas/common";
 
 const galleryFields = {
-  url: blobImageUrl,
+  url: mediaImageUrl,
   alt: requiredText("Teks alternatif", 200),
   caption: optionalText("Keterangan", 300),
   // Blank form inputs default to 0 for display order.

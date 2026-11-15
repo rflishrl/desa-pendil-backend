@@ -302,9 +302,7 @@ export function MediaStorageDashboard({ page }: { page: number }) {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-2 border-b pb-2">
               <span className="text-muted-foreground">Provider Aktif</span>
-              <Badge variant={config.provider === "r2" ? "default" : "secondary"}>
-                {config.provider === "r2" ? "Cloudflare R2" : "Vercel Blob (Transisi)"}
-              </Badge>
+              <Badge variant="default">Cloudflare R2</Badge>
             </div>
             <div className="flex items-center justify-between gap-2 border-b pb-2">
               <span className="text-muted-foreground">Bucket Target</span>
@@ -350,9 +348,7 @@ export function MediaStorageDashboard({ page }: { page: number }) {
               </EmptyMedia>
               <EmptyTitle>Belum ada aset di media_objects</EmptyTitle>
               <EmptyDescription>
-                {config.provider === "blob"
-                  ? "Aplikasi masih menggunakan STORAGE_PROVIDER=blob. Aset WebP R2 akan muncul di sini setelah upload R2 atau migrasi data dijalankan."
-                  : "Unggah foto berita atau galeri baru untuk melihat catatan objek WebP di sini."}
+                Unggah foto berita atau galeri baru untuk melihat catatan objek WebP di sini.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

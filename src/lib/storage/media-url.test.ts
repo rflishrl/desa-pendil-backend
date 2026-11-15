@@ -79,10 +79,10 @@ describe("getPublicMediaUrl & getPublicThumbUrl", () => {
     );
   });
 
-  it("supports legacy http(s) URLs (dual-read) and empty values", () => {
-    const legacy = "https://abc.public.blob.vercel-storage.com/desa-pendil/articles/a.jpg";
-    expect(getPublicMediaUrl(legacy)).toBe(legacy);
-    expect(getPublicThumbUrl(legacy)).toBe(legacy);
+  it("preserves matching R2 origin URLs and handles empty values", () => {
+    const fullUrl = `${DOMAIN}/dev/${VALID_UUID}.webp`;
+    expect(getPublicMediaUrl(fullUrl)).toBe(fullUrl);
+    expect(getPublicThumbUrl(fullUrl)).toBe(`${DOMAIN}/dev/${VALID_UUID}-thumb.webp`);
     expect(getPublicMediaUrl("")).toBe("");
     expect(getPublicThumbUrl("")).toBe("");
   });
@@ -95,14 +95,14 @@ describe("getPublicMediaUrl & getPublicThumbUrl", () => {
     expect(() => getPublicThumbUrl(`${VALID_UUID}.webp`)).toThrow(ConfigError);
   });
 
-  it("normalizes R2 domain URLs into canonical keys and rejects wrong origins", () => {
+  it("normalizes R2 domain URLs into canonical keys and rejects wrong origins or unknown hosts", () => {
     expect(normalizeMediaInputForStorage(`${DOMAIN}/dev/${VALID_UUID}.webp`)).toBe(
       `dev/${VALID_UUID}.webp`,
     );
     expect(normalizeMediaInputForStorage(`${VALID_UUID}.webp`)).toBe(`${VALID_UUID}.webp`);
-    const legacy =
-      "https://m6pmrghaaiznqnan.public.blob.vercel-storage.com/desa-pendil/articles/a.jpg";
-    expect(normalizeMediaInputForStorage(legacy)).toBe(legacy);
+    expect(() =>
+      normalizeMediaInputForStorage("https://legacy-cdn.example.com/desa-pendil/articles/a.jpg"),
+    ).toThrow();
     expect(() =>
       normalizeMediaInputForStorage(`https://wrong-host.example.com/${VALID_UUID}.webp`),
     ).toThrow();

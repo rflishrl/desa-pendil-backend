@@ -4,7 +4,8 @@ import { articleCreateSchema, articleUpdateSchema } from "@/features/articles/sc
 import { galleryCreateSchema, galleryUpdateSchema } from "@/features/gallery/schemas";
 import { listQuerySchema } from "@/lib/schemas/common";
 
-const BLOB_URL = "https://abc123.public.blob.vercel-storage.com/desa-pendil/articles/photo-x.jpg";
+const MEDIA_KEY = "550e8400-e29b-41d4-a716-446655440000.webp";
+const MEDIA_URL = `https://media-dp.raflisahrul.my.id/${MEDIA_KEY}`;
 
 describe("articleCreateSchema", () => {
   it("mengisi nilai bawaan untuk kolom opsional", () => {
@@ -19,21 +20,28 @@ describe("articleCreateSchema", () => {
     });
   });
 
-  it("menerima gambar dari Vercel Blob", () => {
-    const result = articleCreateSchema.parse({
+  it("menerima key canonical R2 dan URL media R2", () => {
+    const withKey = articleCreateSchema.parse({
       title: "Panen Raya",
       content: "Isi",
-      thumbnail_url: BLOB_URL,
+      thumbnail_url: MEDIA_KEY,
     });
-    expect(result.thumbnail_url).toBe(BLOB_URL);
+    expect(withKey.thumbnail_url).toBe(MEDIA_KEY);
+
+    const withUrl = articleCreateSchema.parse({
+      title: "Panen Raya",
+      content: "Isi",
+      thumbnail_url: MEDIA_URL,
+    });
+    expect(withUrl.thumbnail_url).toBe(MEDIA_URL);
   });
 
   it.each([
     "https://example.com/foto.jpg",
-    "http://abc123.public.blob.vercel-storage.com/foto.jpg",
-    "https://public.blob.vercel-storage.com.evil.com/foto.jpg",
+    "https://cdn.example.com/desa-pendil/articles/photo-x.jpg",
+    "http://media-dp.raflisahrul.my.id/550e8400-e29b-41d4-a716-446655440000.webp",
     "javascript:alert(1)",
-  ])("menolak gambar di luar Vercel Blob: %s", (thumbnail_url) => {
+  ])("menolak URL atau format di luar key/URL media R2: %s", (thumbnail_url) => {
     expect(
       articleCreateSchema.safeParse({
         title: "Panen Raya",
@@ -66,7 +74,7 @@ describe("galleryCreateSchema", () => {
 
   it("menerima data lengkap, memangkas spasi, dan mengisi urutan 0", () => {
     const result = galleryCreateSchema.parse({
-      url: BLOB_URL,
+      url: MEDIA_KEY,
       alt: "  Balai desa ",
     });
     expect(result.alt).toBe("Balai desa");
@@ -75,7 +83,7 @@ describe("galleryCreateSchema", () => {
   });
 
   it("urutan kosong dianggap 0, pecahan ditolak", () => {
-    const base = { url: BLOB_URL, alt: "Balai desa" };
+    const base = { url: MEDIA_URL, alt: "Balai desa" };
     expect(galleryCreateSchema.parse({ ...base, sort_order: "" }).sort_order).toBe(0);
     expect(galleryCreateSchema.safeParse({ ...base, sort_order: 1.5 }).success).toBe(false);
   });

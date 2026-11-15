@@ -1,20 +1,19 @@
-import { getServerEnv } from "@/lib/env";
 import { getR2Provider } from "@/lib/storage/r2";
 import type { StorageProvider } from "@/lib/storage/types";
 
-export type StorageProviderKind = "blob" | "r2";
+export type StorageProviderKind = "r2";
 
-/** Returns the active upload storage provider configured via STORAGE_PROVIDER. */
+/** Returns the active upload storage provider (Cloudflare R2). */
 export function getStorageProviderKind(): StorageProviderKind {
-  return getServerEnv().STORAGE_PROVIDER;
+  return "r2";
 }
 
 /** Returns true when uploads are routed to Cloudflare R2. */
 export function isR2ProviderEnabled(): boolean {
-  return getStorageProviderKind() === "r2";
+  return true;
 }
 
-/** Returns the R2 storage provider instance when R2 operations are invoked. */
+/** Returns the R2 storage provider instance. */
 export function getR2Storage(): StorageProvider {
   return getR2Provider();
 }

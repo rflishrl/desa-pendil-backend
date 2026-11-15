@@ -1,26 +1,15 @@
 import { AppError } from "@/lib/api/errors";
 import { ConfigError, isNonProductionMediaEnv } from "@/lib/env";
 import {
-  BLOB_HOSTNAME,
   extractCanonicalKeyFromHttpsUrl,
   isAcceptedMediaInput,
-  isLegacyBlobUrl,
-  isLegacyMediaUrl,
   isValidMediaKey,
   isValidObjectKey,
 } from "@/lib/storage/media-key";
 
 export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
-export {
-  BLOB_HOSTNAME,
-  extractCanonicalKeyFromHttpsUrl,
-  isAcceptedMediaInput,
-  isLegacyBlobUrl,
-  isLegacyMediaUrl,
-  isValidMediaKey,
-  isValidObjectKey,
-};
+export { extractCanonicalKeyFromHttpsUrl, isAcceptedMediaInput, isValidMediaKey, isValidObjectKey };
 
 /** Throws AppError("BAD_REQUEST") if canonical full-size media key is invalid. */
 export function assertValidMediaKey(key: string): string {
@@ -68,35 +57,42 @@ function resolvePublicMediaDomain(explicitDomain?: string): string {
 }
 
 /**
- * Builds the public absolute URL for the `full` image from a stored key.
- * Preserves empty strings and legacy `http(s)://` URLs during transition.
+ * Builds the public absolute URL for the `full` image from a stored canonical R2 key.
+ * Returns an empty string for empty inputs, and preserves canonical URLs from the same origin if passed.
  */
 export function getPublicMediaUrl(keyOrUrl: string, explicitDomain?: string): string {
   if (!keyOrUrl) return "";
-  if (isLegacyMediaUrl(keyOrUrl)) return keyOrUrl;
+  const domain = resolvePublicMediaDomain(explicitDomain);
+  const extracted = extractCanonicalKeyFromHttpsUrl(keyOrUrl);
+  if (extracted && extracted.origin === new URL(domain).origin) {
+    return `${domain}/${extracted.key}`;
+  }
   const key = assertValidMediaKey(keyOrUrl);
-  return `${resolvePublicMediaDomain(explicitDomain)}/${key}`;
+  return `${domain}/${key}`;
 }
 
 /**
- * Builds the public absolute URL for the `thumb` (`480px`) variant from a stored key.
- * Returns legacy `http(s)://` URLs unchanged during transition so existing cards keep working.
+ * Builds the public absolute URL for the `thumb` (`480px`) variant from a stored canonical R2 key.
  */
 export function getPublicThumbUrl(keyOrUrl: string, explicitDomain?: string): string {
   if (!keyOrUrl) return "";
-  if (isLegacyMediaUrl(keyOrUrl)) return keyOrUrl;
-  const thumbKey = deriveThumbKey(keyOrUrl);
-  return `${resolvePublicMediaDomain(explicitDomain)}/${thumbKey}`;
+  const domain = resolvePublicMediaDomain(explicitDomain);
+  const extracted = extractCanonicalKeyFromHttpsUrl(keyOrUrl);
+  const key =
+    extracted && extracted.origin === new URL(domain).origin
+      ? extracted.key
+      : assertValidMediaKey(keyOrUrl);
+  const thumbKey = deriveThumbKey(key);
+  return `${domain}/${thumbKey}`;
 }
 
 /**
  * Normalizes an incoming media reference (`url` or canonical key) for DB persistence.
- * Strips the configured `R2_PUBLIC_DOMAIN` prefix into a canonical UUID WebP key while
- * keeping legacy Vercel Blob URLs intact during transition.
+ * Strips the configured `R2_PUBLIC_DOMAIN` prefix into a canonical UUID WebP key.
  */
 export function normalizeMediaInputForStorage(value: string, explicitDomain?: string): string {
   if (!value) return "";
-  if (isLegacyBlobUrl(value) || isValidMediaKey(value)) return value;
+  if (isValidMediaKey(value)) return value;
 
   const extracted = extractCanonicalKeyFromHttpsUrl(value);
   if (!extracted) {

@@ -389,7 +389,7 @@ export function ImageUploader({
           className="h-11 bg-card"
         />
         <FieldDescription id={`${urlId}-hint`}>
-          Mendukung alamat media R2 aplikasi atau URL Vercel Blob lama.
+          Mendukung alamat media R2 aplikasi.
         </FieldDescription>
         {error && <FieldError id={`${urlId}-error`}>{error}</FieldError>}
       </Field>

@@ -23,7 +23,6 @@ import { Route as AdminGalleryNewRouteImport } from './routes/admin/gallery/new'
 import { Route as ApiAdminStorageRouteImport } from './routes/api/admin/storage'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
-import { Route as ApiCronCleanupBlobsRouteImport } from './routes/api/cron/cleanup-blobs'
 import { Route as ApiCronCleanupMediaRouteImport } from './routes/api/cron/cleanup-media'
 import { Route as AdminArticlesIdEditRouteImport } from './routes/admin/articles/$id.edit'
 import { Route as AdminGalleryIdEditRouteImport } from './routes/admin/gallery/$id.edit'
@@ -106,11 +105,6 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiCronCleanupBlobsRoute = ApiCronCleanupBlobsRouteImport.update({
-  id: '/api/cron/cleanup-blobs',
-  path: '/api/cron/cleanup-blobs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiCronCleanupMediaRoute = ApiCronCleanupMediaRouteImport.update({
   id: '/api/cron/cleanup-media',
   path: '/api/cron/cleanup-media',
@@ -181,7 +175,6 @@ export interface FileRoutesByFullPath {
   '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
   '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles/': typeof AdminArticlesIndexRoute
   '/admin/gallery/': typeof AdminGalleryIndexRoute
@@ -208,7 +201,6 @@ export interface FileRoutesByTo {
   '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
   '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles': typeof AdminArticlesIndexRoute
   '/admin/gallery': typeof AdminGalleryIndexRoute
@@ -237,7 +229,6 @@ export interface FileRoutesById {
   '/api/admin/storage': typeof ApiAdminStorageRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/cron/cleanup-blobs': typeof ApiCronCleanupBlobsRoute
   '/api/cron/cleanup-media': typeof ApiCronCleanupMediaRoute
   '/admin/articles/': typeof AdminArticlesIndexRoute
   '/admin/gallery/': typeof AdminGalleryIndexRoute
@@ -267,7 +258,6 @@ export interface FileRouteTypes {
     | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
-    | '/api/cron/cleanup-blobs'
     | '/api/cron/cleanup-media'
     | '/admin/articles/'
     | '/admin/gallery/'
@@ -294,7 +284,6 @@ export interface FileRouteTypes {
     | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
-    | '/api/cron/cleanup-blobs'
     | '/api/cron/cleanup-media'
     | '/admin/articles'
     | '/admin/gallery'
@@ -322,7 +311,6 @@ export interface FileRouteTypes {
     | '/api/admin/storage'
     | '/api/auth/login'
     | '/api/auth/logout'
-    | '/api/cron/cleanup-blobs'
     | '/api/cron/cleanup-media'
     | '/admin/articles/'
     | '/admin/gallery/'
@@ -347,7 +335,6 @@ export interface RootRouteChildren {
   ApiAdminStorageRoute: typeof ApiAdminStorageRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
-  ApiCronCleanupBlobsRoute: typeof ApiCronCleanupBlobsRoute
   ApiCronCleanupMediaRoute: typeof ApiCronCleanupMediaRoute
   ApiAdminArticlesIdRoute: typeof ApiAdminArticlesIdRoute
   ApiAdminDiagnosticsImageRoute: typeof ApiAdminDiagnosticsImageRoute
@@ -457,13 +444,6 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/logout'
       fullPath: '/api/auth/logout'
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/cron/cleanup-blobs': {
-      id: '/api/cron/cleanup-blobs'
-      path: '/api/cron/cleanup-blobs'
-      fullPath: '/api/cron/cleanup-blobs'
-      preLoaderRoute: typeof ApiCronCleanupBlobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/cleanup-media': {
@@ -579,7 +559,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminStorageRoute: ApiAdminStorageRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
-  ApiCronCleanupBlobsRoute: ApiCronCleanupBlobsRoute,
   ApiCronCleanupMediaRoute: ApiCronCleanupMediaRoute,
   ApiAdminArticlesIdRoute: ApiAdminArticlesIdRoute,
   ApiAdminDiagnosticsImageRoute: ApiAdminDiagnosticsImageRoute,

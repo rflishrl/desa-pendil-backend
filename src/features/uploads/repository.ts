@@ -205,15 +205,11 @@ export async function deleteMediaObjectsByKeys(keys: string[]): Promise<number> 
   return removed;
 }
 
-const INLINE_BLOB_URL_RE = /https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/[^\s"'<>)]+/gi;
 const INLINE_R2_KEY_RE =
   /\b(?:dev\/)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:-thumb)?\.webp\b/gi;
 
 function collectInlineMediaRefs(text: unknown, out: Set<string>): void {
   if (typeof text !== "string" || !text) return;
-  for (const match of text.matchAll(INLINE_BLOB_URL_RE)) {
-    out.add(match[0]);
-  }
   for (const match of text.matchAll(INLINE_R2_KEY_RE)) {
     out.add(match[0].replace(/-thumb\.webp$/, ".webp"));
   }

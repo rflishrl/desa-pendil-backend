@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetServerEnvCache } from "@/lib/env";
 
-const deleteOrphanImages = vi.fn();
 const purgeExpiredRateLimits = vi.fn();
 const listReferencedImageUrls = vi.fn();
 const listOrphanCandidateMediaObjects = vi.fn();
@@ -18,9 +17,6 @@ vi.mock("@/lib/api/rate-limit", async () => {
     purgeExpiredRateLimits: (...args: unknown[]) => purgeExpiredRateLimits(...args),
   };
 });
-vi.mock("@/lib/storage/blob", () => ({
-  deleteOrphanImages: (...args: unknown[]) => deleteOrphanImages(...args),
-}));
 vi.mock("@/lib/storage/provider", async () => {
   const actual =
     await vi.importActual<typeof import("@/lib/storage/provider")>("@/lib/storage/provider");
@@ -70,7 +66,6 @@ beforeEach(() => {
   listOrphanCandidateMediaObjects.mockResolvedValue([]);
   deleteMediaObjectsByKeys.mockResolvedValue(0);
   deleteObjects.mockResolvedValue({ deleted: [], failed: [] });
-  deleteOrphanImages.mockResolvedValue({ scanned: 0, deleted: 0 });
 });
 
 afterEach(() => {
@@ -83,17 +78,14 @@ describe("GET /api/cron/cleanup-media", () => {
     expect((await call()).status).toBe(401);
     expect((await call("Bearer wrong-secret")).status).toBe(401);
     expect(deleteObjects).not.toHaveBeenCalled();
-    expect(deleteOrphanImages).not.toHaveBeenCalled();
   });
 
   it("menghapus pasangan orphan R2 (full + thumb) dan baris media_objects tanpa memanggil listObjects", async () => {
-    vi.stubEnv("STORAGE_PROVIDER", "r2");
     vi.stubEnv("R2_ACCESS_KEY_ID", "k");
     vi.stubEnv("R2_SECRET_ACCESS_KEY", "s");
     vi.stubEnv("R2_ENDPOINT", "https://acc.r2.cloudflarestorage.com");
     vi.stubEnv("R2_BUCKET_NAME", "desa-pendil");
     vi.stubEnv("R2_PUBLIC_DOMAIN", "https://media-dp.raflisahrul.my.id");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
     resetServerEnvCache();
 
     listReferencedImageUrls.mockResolvedValue(
@@ -135,7 +127,6 @@ describe("GET /api/cron/cleanup-media", () => {
         scanned: 2,
         deleted: 1,
         r2: { scanned: 2, deleted: 1 },
-        blob: { scanned: 0, deleted: 0 },
         purgedRateLimits: 2,
       },
     });
@@ -145,27 +136,5 @@ describe("GET /api/cron/cleanup-media", () => {
       `dev/${UUID_ORPHAN}-thumb.webp`,
     ]);
     expect(deleteMediaObjectsByKeys).toHaveBeenCalledWith([`dev/${UUID_ORPHAN}.webp`]);
-    expect(deleteOrphanImages).not.toHaveBeenCalled();
-  });
-
-  it("tetap membersihkan orphan Blob ketika BLOB_READ_WRITE_TOKEN masih aktif selama transisi", async () => {
-    vi.stubEnv("STORAGE_PROVIDER", "blob");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "blob-token");
-    resetServerEnvCache();
-    deleteOrphanImages.mockResolvedValue({ scanned: 4, deleted: 2 });
-
-    const response = await call("Bearer cron-secret-untuk-pengujian");
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      success: true,
-      data: {
-        scanned: 4,
-        deleted: 2,
-        r2: { scanned: 0, deleted: 0 },
-        blob: { scanned: 4, deleted: 2 },
-        purgedRateLimits: 2,
-      },
-    });
-    expect(deleteOrphanImages).toHaveBeenCalledOnce();
   });
 });

@@ -43,7 +43,7 @@ export interface DeleteObjectsResult {
 }
 
 export interface StorageProvider {
-  readonly name: "blob" | "r2";
+  readonly name: "r2";
   putObject(input: PutObjectInput): Promise<PutObjectResult>;
   deleteObjects(keys: string[]): Promise<DeleteObjectsResult>;
   headObject(key: string): Promise<HeadObjectResult | null>;

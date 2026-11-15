@@ -38,14 +38,12 @@ const UUID_2 = "550e8400-e29b-41d4-a716-446655440002";
 const UUID_3 = "550e8400-e29b-41d4-a716-446655440003";
 
 function stubEnvForStorage(quotaMb = "100") {
-  vi.stubEnv("STORAGE_PROVIDER", "r2");
   vi.stubEnv("R2_ACCESS_KEY_ID", "super-secret-access-key-id");
   vi.stubEnv("R2_SECRET_ACCESS_KEY", "super-secret-r2-token");
   vi.stubEnv("R2_ENDPOINT", "https://secret-account.r2.cloudflarestorage.com");
   vi.stubEnv("R2_BUCKET_NAME", "desa-pendil");
   vi.stubEnv("R2_PUBLIC_DOMAIN", "https://media-dp.raflisahrul.my.id");
   vi.stubEnv("R2_APP_QUOTA_MB", quotaMb);
-  vi.stubEnv("BLOB_READ_WRITE_TOKEN", "vercel_blob_rw_secret");
   resetServerEnvCache();
 }
 
@@ -84,7 +82,6 @@ describe("GET /api/admin/storage", () => {
     expect(rawText).not.toContain("super-secret-access-key-id");
     expect(rawText).not.toContain("super-secret-r2-token");
     expect(rawText).not.toContain("secret-account.r2.cloudflarestorage.com");
-    expect(rawText).not.toContain("vercel_blob_rw_secret");
 
     const body = await readBody<{
       usage: {

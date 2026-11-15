@@ -8,20 +8,19 @@ export class ConfigError extends Error {
   }
 }
 
-const optionalTrimmedString = z.preprocess(
+const requiredTrimmedString = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-  z.string().trim().min(1).optional(),
+  z.string().trim().min(1),
 );
 
-const optionalHttpsUrl = z.preprocess(
+const requiredHttpsUrl = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
   z
     .string()
     .trim()
     .url("must be a valid URL")
     .refine((value) => value.startsWith("https://"), "must use https:// scheme")
-    .transform((value) => value.replace(/\/+$/, ""))
-    .optional(),
+    .transform((value) => value.replace(/\/+$/, "")),
 );
 
 function optionalPositiveNumber(defaultValue: number, max?: number) {
@@ -42,60 +41,33 @@ function optionalPositiveNumber(defaultValue: number, max?: number) {
  * Every value is read on the server only, so none of them use the public Next.js
  * prefix. The browser never accesses database credentials.
  */
-const serverEnvSchema = z
-  .object({
-    DATABASE_URI: z
-      .string()
-      .trim()
-      .min(1, "must be the Neon PostgreSQL connection string (postgresql://...)"),
-    SESSION_SECRET: z
-      .string()
-      .trim()
-      .min(32, "must be at least 32 characters long")
-      .optional()
-      .refine((val) => process.env.NODE_ENV !== "production" || Boolean(val && val.length >= 32), {
-        message: "is required and must be at least 32 characters in production",
-      }),
-    STORAGE_PROVIDER: z.preprocess(
-      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-      z.enum(["blob", "r2"]).default("blob"),
-    ),
-    BLOB_READ_WRITE_TOKEN: optionalTrimmedString,
-    R2_ACCESS_KEY_ID: optionalTrimmedString,
-    R2_SECRET_ACCESS_KEY: optionalTrimmedString,
-    R2_ENDPOINT: optionalHttpsUrl,
-    R2_BUCKET_NAME: optionalTrimmedString,
-    R2_PUBLIC_DOMAIN: optionalHttpsUrl,
-    R2_APP_QUOTA_MB: optionalPositiveNumber(2560),
-    MAX_UPLOAD_MB: optionalPositiveNumber(4, 4),
-    ALLOWED_ORIGINS: z.string().optional(),
-    FRONTEND_URL: z.string().optional(),
-    REVALIDATE_SECRET: z.string().optional(),
-    CRON_SECRET: z.string().optional(),
-    TURNSTILE_SECRET_KEY: z.string().trim().optional(),
-    TURNSTILE_ALLOWED_HOSTNAMES: z.string().trim().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.STORAGE_PROVIDER !== "r2") return;
-
-    const requiredR2Fields = [
-      "R2_ACCESS_KEY_ID",
-      "R2_SECRET_ACCESS_KEY",
-      "R2_ENDPOINT",
-      "R2_BUCKET_NAME",
-      "R2_PUBLIC_DOMAIN",
-    ] as const;
-
-    for (const field of requiredR2Fields) {
-      if (!data[field]) {
-        ctx.addIssue({
-          code: "custom",
-          path: [field],
-          message: "is required when STORAGE_PROVIDER=r2",
-        });
-      }
-    }
-  });
+const serverEnvSchema = z.object({
+  DATABASE_URI: z
+    .string()
+    .trim()
+    .min(1, "must be the Neon PostgreSQL connection string (postgresql://...)"),
+  SESSION_SECRET: z
+    .string()
+    .trim()
+    .min(32, "must be at least 32 characters long")
+    .optional()
+    .refine((val) => process.env.NODE_ENV !== "production" || Boolean(val && val.length >= 32), {
+      message: "is required and must be at least 32 characters in production",
+    }),
+  R2_ACCESS_KEY_ID: requiredTrimmedString,
+  R2_SECRET_ACCESS_KEY: requiredTrimmedString,
+  R2_ENDPOINT: requiredHttpsUrl,
+  R2_BUCKET_NAME: requiredTrimmedString,
+  R2_PUBLIC_DOMAIN: requiredHttpsUrl,
+  R2_APP_QUOTA_MB: optionalPositiveNumber(2560),
+  MAX_UPLOAD_MB: optionalPositiveNumber(4, 4),
+  ALLOWED_ORIGINS: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
+  REVALIDATE_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+  TURNSTILE_SECRET_KEY: z.string().trim().optional(),
+  TURNSTILE_ALLOWED_HOSTNAMES: z.string().trim().optional(),
+});
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 

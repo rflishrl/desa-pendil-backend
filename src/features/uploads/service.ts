@@ -6,7 +6,6 @@ import type { Actor } from "@/lib/auth/actor";
 import { assertAdmin } from "@/lib/auth/authorize";
 import { getServerEnv } from "@/lib/env";
 import { log } from "@/lib/log";
-import { UPLOAD_PREFIX, uploadImage } from "@/lib/storage/blob";
 import {
   deriveThumbKey,
   generateMediaKey,
@@ -14,7 +13,7 @@ import {
   getPublicThumbUrl,
   IMMUTABLE_CACHE_CONTROL,
 } from "@/lib/storage/media-url";
-import { getR2Storage, getStorageProviderKind } from "@/lib/storage/provider";
+import { getR2Storage } from "@/lib/storage/provider";
 
 const BYTES_PER_MIB = 1024 * 1024;
 
@@ -33,8 +32,8 @@ async function rollbackObjects(keys: string[]): Promise<void> {
 }
 
 /**
- * Uploads a single image file using the configured storage provider (`blob` or `r2`).
- * In `r2` mode, processes the image with `Bun.Image` into `full` and `thumb` WebP variants,
+ * Uploads a single image file to Cloudflare R2.
+ * Processes the image with `Bun.Image` into `full` and `thumb` WebP variants,
  * enforces app quota, uploads both objects with atomic rollback on failure, and tracks in DB.
  */
 export async function uploadPhoto(
@@ -55,11 +54,6 @@ export async function uploadPhoto(
   }
   if (file.size > maxBytes) {
     throw new AppError("PAYLOAD_TOO_LARGE", `Ukuran foto maksimal ${env.MAX_UPLOAD_MB} MB.`);
-  }
-
-  if (getStorageProviderKind() === "blob") {
-    const url = await uploadImage(file, `${UPLOAD_PREFIX}${folder}`);
-    return { url, thumbUrl: url };
   }
 
   const inputBytes = new Uint8Array(await file.arrayBuffer());

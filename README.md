@@ -2,7 +2,7 @@
 
 API service and administrative panel for the Desa Pendil website. Administrators manage news, articles, announcements, and photo galleries here, while the public frontend consumes them via the REST API.
 
-Built with **TanStack Start**, **TanStack Router**, **Vite 8**, **Nitro**, **React 19**, **TypeScript**, **Tailwind CSS 4**, **shadcn/ui**, **TanStack Query 5**, **react-hook-form** with **Zod**, **Neon PostgreSQL** (`@neondatabase/serverless`), self-contained scrypt password hashing and HMAC-SHA256 session authentication, **Cloudflare Turnstile** bot defense, **Vercel Blob** for media storage, **Biome**, and **Vitest**.
+Built with **TanStack Start**, **TanStack Router**, **Vite 8**, **Nitro**, **React 19**, **TypeScript**, **Tailwind CSS 4**, **shadcn/ui**, **TanStack Query 5**, **react-hook-form** with **Zod**, **Neon PostgreSQL** (`@neondatabase/serverless`), self-contained scrypt password hashing and HMAC-SHA256 session authentication, **Cloudflare Turnstile** bot defense, **Cloudflare R2** for media storage, **Biome**, and **Vitest**.
 
 ---
 
@@ -18,7 +18,7 @@ Built with **TanStack Start**, **TanStack Router**, **Vite 8**, **Nitro**, **Rea
 - **Client State & Forms**: TanStack Query 5, react-hook-form, Zod 4
 - **Bot Defense**: Cloudflare Turnstile (`@marsidev/react-turnstile`) with server-side validation
 - **Auth & Security**: HMAC-SHA256 signed session cookies, scrypt password hashing, database-backed rate limiting, same-origin verification
-- **Media Storage**: Vercel Blob SDK
+- **Media Storage**: Cloudflare R2 (`aws4fetch` + `Bun.Image` WebP pipeline)
 - **Code Hygiene**: Biome 2.6 (Linter & Formatter)
 - **Testing**: Vitest 5.0 with strict boundary validation
 
@@ -28,7 +28,7 @@ Built with **TanStack Start**, **TanStack Router**, **Vite 8**, **Nitro**, **Rea
 
 ```
 Browser -> Frontend (desa-pendil) -> Backend API -> Neon PostgreSQL
-                                           Photos: Vercel Blob
+                                           Photos: Cloudflare R2
 ```
 
 The codebase strictly enforces three architectural layers:
@@ -47,7 +47,7 @@ Layer boundaries are automatically validated by `bun run check:boundaries`. Clie
 
 - [Bun](https://bun.sh) (version 1.0 or newer) or Node.js >= 22
 - A Neon PostgreSQL database project ([neon.tech](https://neon.tech))
-- A Vercel Blob storage store (optional for local dev, required for photo uploads)
+- A Cloudflare R2 bucket (`desa-pendil`) with S3 API credentials and public custom domain (required for photo uploads)
 - A Cloudflare Turnstile account (free tier from [dash.cloudflare.com](https://dash.cloudflare.com))
 
 ### 2. Environment Setup
@@ -68,11 +68,16 @@ Configure `.env.local` with your credentials:
 | :--- | :--- | :--- |
 | `DATABASE_URI` | Neon PostgreSQL connection string (`postgresql://...`). Supports `DATABASE_URL` or `POSTGRES_URL` as fallbacks. | Required |
 | `SESSION_SECRET` | Secret string (minimum 32 characters, recommended 64+) used to sign HMAC-SHA256 session cookies. | Required |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for photo uploads. Automatically provided in Vercel deployments. | Optional for local text edits |
+| `R2_ACCESS_KEY_ID` | Cloudflare R2 S3-compatible access key ID (scoped to the `desa-pendil` bucket). | Required for uploads |
+| `R2_SECRET_ACCESS_KEY` | Cloudflare R2 S3-compatible secret access key. | Required for uploads |
+| `R2_ENDPOINT` | Cloudflare R2 S3 API endpoint (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`). | Required for uploads |
+| `R2_BUCKET_NAME` | Cloudflare R2 bucket name (`desa-pendil`). | Required for uploads |
+| `R2_PUBLIC_DOMAIN` | Custom public CDN domain for R2 media (e.g. `https://media-dp.raflisahrul.my.id`). | Required for uploads |
+| `R2_APP_QUOTA_MB` | Optional application media storage quota in MB for monitoring alerts (default `2560`). | Optional |
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins for CORS (e.g. `http://localhost:5173,https://desapendil.id`). | Required for public API |
 | `FRONTEND_URL` | Public frontend URL. The backend triggers on-demand revalidation here on content updates. | Optional |
 | `REVALIDATE_SECRET` | Shared secret token for frontend cache revalidation. | Optional |
-| `CRON_SECRET` | Secret token used by Vercel Cron to trigger daily orphaned blob cleanup. | Optional |
+| `CRON_SECRET` | Secret token used by Vercel Cron to trigger daily orphaned media cleanup. | Optional |
 | `TURNSTILE_SECRET_KEY` | Secret key from Cloudflare Turnstile for server-side siteverify (never expose to client). | Required for login |
 | `VITE_TURNSTILE_SITE_KEY` | Public site key for client Turnstile widget (prefixed with `VITE_`). | Required for login |
 | `TURNSTILE_ALLOWED_HOSTNAMES` | Comma-separated list of allowed hostnames (e.g. `desapendil.id,admin.desapendil.id`). | Required in production |
@@ -153,7 +158,7 @@ All API responses follow a uniform JSON envelope: `{ "success": true, "data": ..
 | GET, PATCH, DELETE | `/api/admin/gallery/$id` | Admin | `no-store` | Retrieve, update, or delete a gallery photo by ID |
 | POST | `/api/auth/login` | Session | `no-store` | Admin login (protected by Cloudflare Turnstile and IP rate limiting) |
 | POST | `/api/auth/logout` | Session | `no-store` | Clears admin session cookie |
-| GET | `/api/cron/cleanup-blobs`| Public (Bearer)| `no-store` | Daily cleanup for orphaned Vercel Blob images |
+| GET | `/api/cron/cleanup-media`| Public (Bearer)| `no-store` | Daily cleanup for orphaned R2 images |
 | POST | `/api/upload` | Admin | `no-store` | Multipart image upload (JPG, PNG, WebP up to 4 MB) |
 
 ---
@@ -195,7 +200,7 @@ The application compiles via Nitro into standalone serverless or Node.js server 
 3. In Project Settings > Environment Variables, configure the variables separately for Production, Preview, and Development:
    - **Production**: Real `DATABASE_URI`, `SESSION_SECRET`, `TURNSTILE_SECRET_KEY`, `VITE_TURNSTILE_SITE_KEY`, and `TURNSTILE_ALLOWED_HOSTNAMES`.
    - **Preview & Development**: Use Cloudflare official dummy keys (`1x0000000000000000000000000000000AA` / `1x00000000000000000000AA`) to ensure pull request previews and automated CI tests never block builds.
-4. In Project Settings > Storage, connect a Vercel Blob store (automatically sets `BLOB_READ_WRITE_TOKEN`).
+4. Configure Cloudflare R2 bucket (`desa-pendil`) with a custom domain and set `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, and `R2_PUBLIC_DOMAIN` in Environment Variables (see `docs/r2-notes.md`).
 5. Trigger a deployment and verify service status via `GET /api/health`.
 
 ---
@@ -234,14 +239,14 @@ src/
     dashboard/    Dashboard metric aggregation service
     gallery/      Gallery feature (components, hooks, queries, repository, schemas, service)
     health/       Database ping and service health verification
-    uploads/      Blob upload service, MIME magic byte checks, and orphan cleanup
+    uploads/      R2 upload service, Bun.Image WebP pipeline, MIME magic byte checks, and orphan cleanup
   lib/
     api/          Client fetcher, error classes, rate limiting, request context, and withApi
     auth/         Actor definitions, password hashing (scrypt), and session signing (HMAC-SHA256)
     db/           Neon serverless database client
     query/        TanStack Query client factory
     schemas/      Common pagination and list query validation schemas
-    storage/      Vercel Blob abstraction layer
+    storage/      Cloudflare R2 storage abstraction layer
     env.ts        Environment validation and hostname parsing
     log.ts        Structured JSON server logging
     revalidate.ts Background cache revalidation dispatcher

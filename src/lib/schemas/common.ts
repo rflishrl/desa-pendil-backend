@@ -1,18 +1,16 @@
 import { z } from "zod";
 
-import { BLOB_HOSTNAME, isAcceptedMediaInput } from "@/lib/storage/media-key";
-
-export { BLOB_HOSTNAME };
+import { isAcceptedMediaInput } from "@/lib/storage/media-key";
 
 /**
- * Image reference validation schema supporting canonical R2 keys/URLs and legacy Vercel Blob URLs.
+ * Image reference validation schema supporting canonical R2 keys and public R2 URLs.
  * Exact R2 domain matching is additionally enforced server-side against `R2_PUBLIC_DOMAIN`.
  */
-export const blobImageUrl = z.string().trim().max(2048).refine(isAcceptedMediaInput, {
+export const mediaImageUrl = z.string().trim().max(2048).refine(isAcceptedMediaInput, {
   error: "Foto harus diunggah lewat tombol Pilih foto.",
 });
 
-export const optionalBlobImageUrl = z.union([z.literal(""), blobImageUrl]);
+export const optionalMediaImageUrl = z.union([z.literal(""), mediaImageUrl]);
 
 export const requiredText = (label: string, max: number) =>
   z

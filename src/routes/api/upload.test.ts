@@ -10,7 +10,6 @@ const TINY_PNG = Buffer.from(
 );
 
 const getCurrentAdmin = vi.fn();
-const uploadBlobImage = vi.fn();
 const putObject = vi.fn();
 const deleteObjects = vi.fn();
 const insertMediaObject = vi.fn();
@@ -27,11 +26,6 @@ vi.mock("@/lib/api/rate-limit", async () => {
 });
 vi.mock("@/lib/auth/session", () => ({
   getCurrentAdmin: (...args: unknown[]) => getCurrentAdmin(...args),
-}));
-vi.mock("@/lib/storage/blob", () => ({
-  UPLOAD_PREFIX: "desa-pendil/",
-  uploadImage: (...args: unknown[]) => uploadBlobImage(...args),
-  deleteImage: vi.fn(),
 }));
 vi.mock("@/lib/storage/provider", async () => {
   const actual =
@@ -78,7 +72,6 @@ function makeUploadRequest(folder: string, file: File | null, origin = "http://l
 }
 
 function stubR2Env() {
-  vi.stubEnv("STORAGE_PROVIDER", "r2");
   vi.stubEnv("R2_ACCESS_KEY_ID", "key");
   vi.stubEnv("R2_SECRET_ACCESS_KEY", "secret");
   vi.stubEnv("R2_ENDPOINT", "https://acc.r2.cloudflarestorage.com");
@@ -121,24 +114,6 @@ describe("POST /api/upload", () => {
 
     const csrf = await POST(makeUploadRequest("articles", file, "https://evil.example"));
     expect(csrf.status).toBe(403);
-  });
-
-  it("tetap mendukung STORAGE_PROVIDER=blob selama transisi", async () => {
-    vi.stubEnv("STORAGE_PROVIDER", "blob");
-    resetServerEnvCache();
-    const blobUrl =
-      "https://m6pmrghaaiznqnan.public.blob.vercel-storage.com/desa-pendil/articles/a.png";
-    uploadBlobImage.mockResolvedValue(blobUrl);
-
-    const file = new File([TINY_PNG], "foto.png", { type: "image/png" });
-    const response = await POST(makeUploadRequest("articles", file));
-    expect(response.status).toBe(201);
-    const body = await readBody(response);
-    expect(body).toEqual({
-      success: true,
-      data: { url: blobUrl, thumbUrl: blobUrl },
-    });
-    expect(putObject).not.toHaveBeenCalled();
   });
 
   it("mengunggah pasangan WebP full + thumb ke R2, mencatat DB, dan mengembalikan metrics", async () => {

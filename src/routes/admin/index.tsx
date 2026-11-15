@@ -71,8 +71,14 @@ const ENDPOINTS = [
 export const getDashboardData = createServerFn({ method: "GET" }).handler(async () => {
   const actor = await getCurrentAdmin();
   const counts = await getDashboardCounts(actor);
-  const blobReady = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-  return { counts, blobReady };
+  const storageReady = Boolean(
+    process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY &&
+      process.env.R2_ENDPOINT &&
+      process.env.R2_BUCKET_NAME &&
+      process.env.R2_PUBLIC_DOMAIN,
+  );
+  return { counts, storageReady };
 });
 
 export const Route = createFileRoute("/admin/")({
@@ -156,7 +162,7 @@ function StatCard({
 }
 
 function DashboardComponent() {
-  const { counts, blobReady } = Route.useLoaderData();
+  const { counts, storageReady } = Route.useLoaderData();
 
   return (
     <div className="space-y-8">
@@ -175,13 +181,13 @@ function DashboardComponent() {
         </div>
       </div>
 
-      {!blobReady && (
+      {!storageReady && (
         <Alert variant="destructive">
           <AlertTriangleIcon className="size-4" aria-hidden="true" />
           <AlertTitle>Perhatian Unggah Foto</AlertTitle>
           <AlertDescription>
-            Unggah foto belum aktif karena <code>BLOB_READ_WRITE_TOKEN</code> belum diisi. Anda
-            masih bisa menambah data dengan menempel URL foto.
+            Unggah foto belum aktif karena konfigurasi Cloudflare R2 (<code>R2_*</code>) belum
+            lengkap. Anda masih bisa menambah data dengan menempel URL media yang valid.
           </AlertDescription>
         </Alert>
       )}
