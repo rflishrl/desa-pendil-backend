@@ -26,9 +26,81 @@ Built with **TanStack Start**, **TanStack Router**, **Vite 8**, **Nitro**, **Rea
 
 ## System Architecture
 
+```mermaid
+flowchart LR
+    Visitor["Public Visitor / Browser"] --> Frontend["Frontend (desa-pendil)"]
+    Admin["Administrator / Browser"] --> AdminUI["Admin Panel (/login, /admin/**)"]
+
+    Frontend -- "REST API (GET)" --> PublicAPI["Public API (/api/news/v1, /api/gallery/v1)"]
+    AdminUI -- "Server Fns & /api/admin/**, /api/upload" --> Backend["TanStack Start + Nitro (Bun Runtime)"]
+    PublicAPI --> Backend
+
+    AdminUI -- "Turnstile Widget" --> Turnstile["Cloudflare Turnstile"]
+    Backend -- "Siteverify" --> Turnstile
+
+    Backend -- "Parameterized SQL" --> Neon[("Neon PostgreSQL")]
+    Backend -- "aws4fetch + Bun.Image WebP" --> R2[("Cloudflare R2 (desa-pendil)")]
+    R2 -- "CDN Custom Domain" --> Visitor
+    R2 -- "CDN Custom Domain" --> AdminUI
+
+    Backend -- "POST /api/revalidate" --> Frontend
+    Cron["Vercel Cron (Daily)"] -- "GET /api/cron/cleanup-media" --> Backend
 ```
-Browser -> Frontend (desa-pendil) -> Backend API -> Neon PostgreSQL
-                                           Photos: Cloudflare R2
+
+## Project Structure
+
+```text
+src/
+├── routes/
+│   ├── __root.tsx                  # Global HTML shell, providers, and theme initialization
+│   ├── index.tsx                   # Root redirect to /admin dashboard
+│   ├── login.tsx                   # Admin login page with Cloudflare Turnstile
+│   ├── admin.tsx                   # Authenticated admin layout (AdminShell sidebar)
+│   ├── admin/
+│   │   ├── index.tsx               # Dashboard metrics & storage readiness alert
+│   │   ├── storage.tsx             # R2 media quota monitor and asset table
+│   │   ├── articles/               # News & articles CRUD pages (list, new, edit)
+│   │   └── gallery/                # Gallery photos CRUD pages (list, new, edit)
+│   └── api/
+│       ├── news/v1/                # Public published articles API endpoints
+│       ├── gallery/v1/             # Public gallery photos API endpoint
+│       ├── admin/                  # Protected admin CRUD, storage & image diagnostics API
+│       ├── auth/                   # Login (Turnstile + rate limit) and logout handlers
+│       ├── cron/
+│       │   └── cleanup-media.ts    # Daily cleanup for orphaned R2 media and rate limits
+│       ├── upload.ts               # Admin multipart image upload -> R2 WebP (full + thumb)
+│       └── health.ts               # Service & Neon database connectivity health check
+├── features/
+│   ├── articles/                   # Article UI components, services, queries, repositories
+│   ├── auth/                       # Login UI, session service, schemas, server functions
+│   ├── dashboard/                  # Dashboard metric aggregation service
+│   ├── gallery/                    # Gallery UI components, services, queries, repositories
+│   ├── health/                     # Health check service and database ping repository
+│   └── uploads/                    # Bun.Image WebP pipeline, R2 quota dashboard, cleanup service
+├── components/
+│   ├── admin-kit/                  # Admin shell, tables, pagination, search, Turnstile field
+│   ├── providers/                  # TanStack Query & next-themes providers
+│   └── ui/                         # Reusable shadcn/ui primitives
+├── hooks/
+│   └── use-mobile.ts               # Responsive viewport hook for admin navigation
+├── lib/
+│   ├── api/                        # withApi() wrapper, errors, CSRF & IP rate limiter
+│   ├── auth/                       # scrypt password hashing, HMAC-SHA256 session cookies
+│   ├── db/                         # Neon serverless PostgreSQL client
+│   ├── image/                      # Client-side image pre-shrink helper prior to upload
+│   ├── query/                      # TanStack Query client factory
+│   ├── schemas/                    # Shared Zod validation & pagination schemas
+│   ├── storage/                    # Cloudflare R2 S3 client (aws4fetch) & media URL helpers
+│   ├── env.ts                      # Validated server environment configuration
+│   ├── log.ts                      # Structured JSON server logger
+│   └── revalidate.ts               # Background frontend cache revalidation dispatcher
+├── server/
+│   └── turnstile.ts                # Server-only Cloudflare Turnstile token verification
+├── types/
+│   └── bun-image.d.ts              # Type definitions for Bun.Image runtime API
+├── globals.css                     # Tailwind CSS 4 styling and dark mode tokens
+├── router.tsx                      # Router factory and TanStack Router registration
+└── routeTree.gen.ts                # Generated route tree (maintained by router plugin)
 ```
 
 The codebase strictly enforces three architectural layers:
@@ -222,44 +294,3 @@ The application compiles via Nitro into standalone serverless or Node.js server 
 | `bun run check:boundaries`| Verifies clean architecture layer boundaries |
 | `bun run db:push` | Applies database schema to Neon PostgreSQL |
 | `bun run create-admin` | Registers or updates an admin user in Neon PostgreSQL |
-
----
-
-## Project Structure
-
-```
-src/
-  components/
-    admin-kit/    Admin layout widgets, table regions, and TurnstileField component
-    providers/    QueryProvider (TanStack Query) and ThemeProvider (next-themes)
-    ui/           Accessible primitives (Button, Card, Dialog, Table, Sonner)
-  features/
-    articles/     Article feature (components, hooks, queries, repository, schemas, service)
-    auth/         Authentication feature (LoginForm, session management, schemas, service)
-    dashboard/    Dashboard metric aggregation service
-    gallery/      Gallery feature (components, hooks, queries, repository, schemas, service)
-    health/       Database ping and service health verification
-    uploads/      R2 upload service, Bun.Image WebP pipeline, MIME magic byte checks, and orphan cleanup
-  lib/
-    api/          Client fetcher, error classes, rate limiting, request context, and withApi
-    auth/         Actor definitions, password hashing (scrypt), and session signing (HMAC-SHA256)
-    db/           Neon serverless database client
-    query/        TanStack Query client factory
-    schemas/      Common pagination and list query validation schemas
-    storage/      Cloudflare R2 storage abstraction layer
-    env.ts        Environment validation and hostname parsing
-    log.ts        Structured JSON server logging
-    revalidate.ts Background cache revalidation dispatcher
-    utils.ts      Class names merge helper and date formatting
-  routes/
-    admin/        File-based admin UI routes (dashboard, articles list/new/edit, gallery list/new/edit)
-    api/          File-based API routes (news, gallery, admin articles/gallery, auth, upload, health, cron)
-    __root.tsx    Root document shell and providers
-    index.tsx     Index redirect to /admin
-    login.tsx     Admin login page with Turnstile integration
-  server/
-    turnstile.ts  Server-side Cloudflare Turnstile token validation and replay defense
-  globals.css     Tailwind CSS 4 layers and dark mode tokens
-  router.tsx      Router factory and TanStack Router registration
-  routeTree.gen.ts Generated route tree (maintained by router plugin)
-```
