@@ -17,3 +17,12 @@ npm-debug.log*
 # Agent skills & workflows (local)
 .agents/
 
+# baseline screenshots (Phase 0 / Phase 7)
+.baseline-screenshots/
+
+# sveltekit
+.svelte-kit/
+.legacy/
+test-results/
+playwright-report/
+

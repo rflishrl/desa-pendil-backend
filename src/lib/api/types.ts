@@ -2,21 +2,21 @@
 export type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };
 
 export interface Pagination {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+	total: number;
+	page: number;
+	limit: number;
+	totalPages: number;
 }
 
 /** Paginated list response payload. */
 export interface Paginated<T> {
-  items: T[];
-  pagination: Pagination;
+	items: T[];
+	pagination: Pagination;
 }
 
 export function paginate<T>(items: T[], total: number, page: number, limit: number): Paginated<T> {
-  return {
-    items,
-    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
-  };
+	return {
+		items,
+		pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+	};
 }

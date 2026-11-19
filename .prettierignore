@@ -1,0 +1,15 @@
+.legacy/
+.svelte-kit/
+.vercel/
+.output/
+.nitro/
+.tanstack/
+.agents/
+.agent/
+public/
+static/
+scripts/
+MIGRATION_NOTES.md
+README.md
+bun.lock
+package-lock.json
