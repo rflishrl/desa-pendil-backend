@@ -9,6 +9,7 @@
 
 	let email = $state('');
 	let password = $state('');
+	let website = $state('');
 	let turnstileToken = $state<string | null>(null);
 	let resetSignal = $state(0);
 	let showPassword = $state(false);
@@ -37,7 +38,12 @@
 			return;
 		}
 
-		const parsed = loginSchema.safeParse({ email, password, turnstileToken: token });
+		const parsed = loginSchema.safeParse({
+			email,
+			password,
+			turnstileToken: token,
+			website
+		});
 		if (!parsed.success) {
 			const nextErrors: { email?: string; password?: string; turnstileToken?: string } = {};
 			for (const issue of parsed.error.issues) {
@@ -58,6 +64,8 @@
 			window.location.assign('/admin');
 		} catch (err) {
 			serverError = err instanceof Error ? err.message : 'Gagal masuk. Coba lagi.';
+			turnstileToken = null;
+			website = '';
 			resetSignal += 1;
 			submitting = false;
 			await tick();
@@ -160,4 +168,21 @@
 	>
 		{submitting ? 'Memeriksa...' : 'Masuk'}
 	</Button>
+
+	<div
+		aria-hidden="true"
+		class="!m-0"
+		style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"
+	>
+		<label for="login-website">Website</label>
+		<input
+			id="login-website"
+			name="website"
+			type="text"
+			bind:value={website}
+			tabindex="-1"
+			autocomplete="off"
+			aria-hidden="true"
+		/>
+	</div>
 </form>

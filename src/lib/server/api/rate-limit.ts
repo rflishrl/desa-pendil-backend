@@ -51,7 +51,7 @@ export async function consumeRateLimit(
 			const minutes = Math.max(1, Math.ceil(row.retry_after_seconds / 60));
 			throw new AppError(
 				'RATE_LIMITED',
-				`Too many requests. Please try again in ${minutes} minute(s).`,
+				`Terlalu banyak percobaan. Coba lagi dalam ${minutes} menit.`,
 				{ retryAfterSeconds: row.retry_after_seconds }
 			);
 		}

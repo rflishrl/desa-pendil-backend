@@ -180,3 +180,18 @@ Diambil menggunakan Playwright Chromium terhadap `desa-pendil-backend` (TanStack
 - **Tindak Lanjut Manual di Vercel**:
   - Ubah Node.js Version ke **24.x** di Vercel Project Settings.
   - Ganti env publik `VITE_TURNSTILE_SITE_KEY` menjadi `PUBLIC_TURNSTILE_SITE_KEY`.
+
+---
+
+## 10. Rate Limiter Berlapis & Anti-Spam (Prompt 2 — `feat/rate-limiter`)
+
+- **Backend Rate Limiter (`#lib/server/api/rate-limit.js` & `#lib/server/api/rate-limits.js`)**:
+  - Mempertahankan store **Neon PostgreSQL (`rate_limits`)** dengan fail-open logging (`warn` saat DB bermasalah), sehingga tidak memerlukan layanan/env Upstash tambahan.
+  - Prefix kunci: `rl:desa-pendil`.
+  - `login`: batas **5 permintaan / 15 menit** per `clientIp:email` (memakai `getClientAddress()` SvelteKit melalui `withApi` dengan fallback header proxy Vercel), mereset counter saat login berhasil, dan mengembalikan HTTP `429` pesan Bahasa Indonesia + header `Retry-After`.
+  - `upload`: batas **20 permintaan / menit** per `actor.id`, dijalankan **setelah autentikasi admin** pada `POST /api/upload`.
+- **Honeypot, Turnstile & Zod 4 (`POST /api/auth/login` & `LoginForm.svelte`)**:
+  - Menambahkan field honeypot `website` pada `loginSchema` (`zod@4.6.7`), `<input id="login-website" name="website">` tersembunyi CSS (`left: -9999px`, `tabindex="-1"`, `autocomplete="off"`, `aria-hidden="true"`), dan silent `200` di endpoint saat terisi tanpa memicu rate limiter, Turnstile, maupun query autentikasi.
+  - Urutan proteksi di `POST /api/auth/login`: origin guard -> JSON parse -> honeypot `website` -> rate limit `rl:desa-pendil:login` -> validasi `loginSchema` -> `verifyTurnstile` -> verifikasi password + set session cookie -> reset rate limit.
+- **Paket Terpasang**: Tetap memakai `zod@4.6.7` dan `@neondatabase/serverless@1.2.1` (tanpa menambah `@upstash/*`, paket `rate-limit.ts` + `rate_limits` PostgreSQL sudah tersedia).
+- **Rekomendasi Vercel Hobby WAF (1 rule gratis)**: Terapkan rate limit rule di Vercel Firewall untuk `POST /api/auth/login` (mis. `30 req / 60s` per IP) sebagai lapisan perimeter di depan aplikasi.

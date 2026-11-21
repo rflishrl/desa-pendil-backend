@@ -108,14 +108,16 @@ afterEach(() => {
 });
 
 describe('POST /api/upload', () => {
-	it('menolak request tanpa sesi admin (401) dan cross-origin (403)', async () => {
+	it('menolak request tanpa sesi admin (401) dan cross-origin (403) sebelum rate limiter', async () => {
 		getCurrentAdmin.mockResolvedValue(null);
 		const file = new File([TINY_PNG], 'foto.png', { type: 'image/png' });
 		const unauth = await POST(makeUploadRequest('articles', file));
 		expect(unauth.status).toBe(401);
+		expect(consumeRateLimit).not.toHaveBeenCalled();
 
 		const csrf = await POST(makeUploadRequest('articles', file, 'https://evil.example'));
 		expect(csrf.status).toBe(403);
+		expect(consumeRateLimit).not.toHaveBeenCalled();
 	});
 
 	it('mengunggah pasangan WebP full + thumb ke R2, mencatat DB, dan mengembalikan metrics', async () => {
@@ -228,7 +230,15 @@ describe('POST /api/upload', () => {
 		const file = new File([TINY_PNG], 'tiny.png', { type: 'image/png' });
 		const res = await POST(makeUploadRequest('articles', file));
 		expect(res.status).toBe(429);
-		expect(consumeRateLimit).toHaveBeenCalledTimes(1);
+		expect(consumeRateLimit).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'rl:desa-pendil:upload',
+				limit: 20,
+				windowSeconds: 60
+			}),
+			ADMIN.id,
+			expect.any(String)
+		);
 		expect(putObject).not.toHaveBeenCalled();
 	});
 });
