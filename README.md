@@ -15,8 +15,8 @@ Built with **SvelteKit 3**, **Svelte 5 (Runes)**, **Vite 8**, **TypeScript 6**, 
 - **Runtime (Production / Vercel)**: Node.js 24 LTS (`>= 22.17`)
 - **Database**: Neon Serverless PostgreSQL (`@neondatabase/serverless`)
 - **Validation**: Zod 4
-- **Bot Defense**: Cloudflare Turnstile (native explicit widget + server-side `siteverify` with single-use replay guard)
-- **Auth & Security**: HMAC-SHA256 signed `HttpOnly` session cookies, `crypto.scrypt` password hashing, PostgreSQL-backed rate limiting, same-origin CSRF verification
+- **Bot Defense**: Cloudflare Turnstile (native explicit widget + server-side `siteverify` with single-use replay guard) + CSS-hidden form honeypot (`website`)
+- **Auth & Security**: HMAC-SHA256 signed `HttpOnly` session cookies, `crypto.scrypt` password hashing, Neon PostgreSQL rate limiting (`rl:desa-pendil`, fail-open), same-origin CSRF verification
 - **Media Storage**: Cloudflare R2 (`aws4fetch` + `sharp` dual-size WebP pipeline, quota guard on Neon `media_objects`, daily orphan cleanup cron)
 - **Code Hygiene**: ESLint + Prettier + `svelte-check` + `check:boundaries`
 - **Testing**: Vitest 5 + Playwright
@@ -99,7 +99,7 @@ Development server starts at `http://localhost:4000` (admin panel at `/login`).
 | `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES` | Private | Server-side Turnstile siteverify secret & allowed hostnames |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Public (`static: true`) | Client Turnstile site key (replaces legacy `VITE_TURNSTILE_SITE_KEY`) |
 
-> **Vercel Deployment Note**: Set Node.js Version to **24.x** in Vercel Project Settings (`Settings -> General -> Node.js Version`) and rename `VITE_TURNSTILE_SITE_KEY` to `PUBLIC_TURNSTILE_SITE_KEY` before deploying.
+> **Vercel Deployment Note**: Set **Framework Preset** to `SvelteKit` (command overrides OFF) and **Node.js Version** to **24.x** in Vercel Project Settings (`package.json` omits `engines.node` to avoid `Node.Js Version Override`). Keep only active env vars (`PUBLIC_TURNSTILE_SITE_KEY` + private keys above; legacy `VITE_*`, `BLOB_*`, and `SUPABASE_*` vars can be removed).
 
 ---
 
@@ -118,3 +118,26 @@ Development server starts at `http://localhost:4000` (admin panel at `/login`).
 | `bun run test:e2e` | Runs Playwright E2E tests |
 | `bun run db:push` | Applies `scripts/schema.sql` to Neon PostgreSQL |
 | `bun run create-admin` | Creates/updates an admin user in Neon PostgreSQL |
+
+---
+
+## Layered Security & Anti-Spam
+
+Built to stay strictly on **Vercel Hobby / Free Tier** without external Redis services:
+
+1. **Vercel WAF (1 Free Rule)**: Recommended on `POST /api/auth/login` in Vercel Firewall (`Log` first, then `Deny 429`).
+2. **Same-Origin CSRF & Session Gate (`withApi`)**: Blocks cross-origin writes (`403`) and validates the HMAC-SHA256 `admin_session` cookie (`401`) on `/api/upload` and `/api/admin/**`.
+3. **Honeypot (`website`)**: Off-screen field (`tabindex="-1"`, `aria-hidden="true"`, `autocomplete="off"`) on `/login`. Filled requests receive a silent `200` no-op before touching rate limiting, Turnstile, or PostgreSQL.
+4. **Neon PostgreSQL Rate Limiter (`#lib/server/api/rate-limit.js`, `rate_limits`)**:
+   - `rl:desa-pendil:login`: `5` attempts per `15` minutes per `${clientIp}:${email}` (checked before Turnstile & `scrypt`; returns `429` + `Retry-After`; resets on valid login).
+   - `rl:desa-pendil:upload`: `20` requests per `1` minute per `actor.id` **after** admin authentication.
+   - Configured **fail-open** (`rate limit check skipped` warning log on DB connectivity errors) and purged daily by `GET /api/cron/cleanup-media`.
+5. **Cloudflare Turnstile + Zod 4**: Server `siteverify` + `loginSchema` (`z.email()`) run before password verification.
+
+---
+
+## Deployment to Vercel
+
+1. Set **Framework Preset** to **`SvelteKit`** with all command overrides (**Build Command**, **Output Directory**, **Install Command**, **Development Command**) **OFF** so Vercel uses `bun.lock` and `.vercel/output`.
+2. Set **Node.js Version** to **`24.x`** in **Project Settings -> Build & Deployment** (`vite.config.ts` targets `nodejs24.x`, region `sin1`; `package.json` omits `engines.node` so Vercel does not warn about `Node.Js Version Override`).
+3. Ensure production environment variables are configured (including `SESSION_SECRET` >= 32 chars and `PUBLIC_TURNSTILE_SITE_KEY`), then run `bun run db:push` once against Neon if tables are not initialized.
